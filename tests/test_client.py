@@ -136,15 +136,41 @@ def test_get_station_info_without_scrape(client):
         json={"device": {"city": "Ingelmunster", "altitude": "18.0",
                          "status": "1", "update": "42", "account": "0"}},
     )
+    responses.get(
+        f"{BASE}/d{DEVICE_ID}",
+        body="<html><head><title>Ginometeo - Weathercloud</title></head>"
+             "<body><script>var latitude = 50.83; var longitude = 3.27;</script></body></html>",
+        content_type="text/html",
+    )
 
     info = client.get_station_info(DEVICE_ID, scrape_name=False)
 
     assert isinstance(info, StationInfo)
-    assert info.name == DEVICE_ID
+    assert info.name == DEVICE_ID  # not scraped
     assert info.city == "Ingelmunster"
     assert info.status == "online"
     assert info.seconds_since_update == 42
     assert info.account_type == 0
+    # Coordinates still fetched (fetch_location=True by default)
+    assert info.latitude == 50.83
+    assert info.longitude == 3.27
+
+
+@responses.activate
+def test_get_station_info_no_network_when_both_false(client):
+    """scrape_name=False AND fetch_location=False → only /device/info is called."""
+    responses.get(
+        f"{BASE}/device/info/{DEVICE_ID}",
+        json={"device": {"city": "Ingelmunster", "altitude": "18.0",
+                         "status": "1", "update": "42", "account": "0"}},
+    )
+
+    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
+
+    assert info.name == DEVICE_ID
+    assert info.latitude is None
+    assert info.longitude is None
+    assert len(responses.calls) == 1
 
 
 @responses.activate
@@ -156,7 +182,8 @@ def test_get_station_info_with_scrape(client):
     )
     responses.get(
         f"{BASE}/d{DEVICE_ID}",
-        body="<html><head><title>Ginometeo - Weathercloud</title></head></html>",
+        body="<html><head><title>Ginometeo - Weathercloud</title></head>"
+             "<body><script>var latitude = 50.83; var longitude = 3.27;</script></body></html>",
         content_type="text/html",
     )
 
@@ -165,6 +192,8 @@ def test_get_station_info_with_scrape(client):
     assert info.name == "Ginometeo"
     assert info.status == "offline"
     assert info.account_type == 1
+    assert info.latitude == 50.83
+    assert info.longitude == 3.27
 
 
 @responses.activate
@@ -174,7 +203,7 @@ def test_get_station_info_unknown_status(client):
         json={"device": {"status": "9"}},
     )
 
-    info = client.get_station_info(DEVICE_ID, scrape_name=False)
+    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
     assert info.status == "unknown"
 
 
@@ -182,7 +211,7 @@ def test_get_station_info_unknown_status(client):
 def test_get_station_info_missing_device_fields_dont_fail(client):
     responses.get(f"{BASE}/device/info/{DEVICE_ID}", json={})
 
-    info = client.get_station_info(DEVICE_ID, scrape_name=False)
+    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
 
     assert info.city == ""
     assert info.altitude == ""
@@ -198,11 +227,105 @@ def test_get_station_info_bad_numeric_fields_dont_fail(client):
         json={"device": {"update": "n/a", "account": "", "city": None}},
     )
 
-    info = client.get_station_info(DEVICE_ID, scrape_name=False)
+    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
 
     assert info.seconds_since_update == 0
     assert info.account_type == 0
     assert info.city == ""
+
+
+# ------------------------------------------------------------------
+# Location fetching via HTML scrape (var latitude / var longitude)
+# ------------------------------------------------------------------
+
+STATION_HTML_WITH_COORDS = """
+<html><head><title>Ginometeo - Weathercloud</title></head>
+<body>
+    <script>
+    var latitude = 50.8303345;
+    var longitude = 3.2696646;
+    </script>
+</body></html>
+"""
+
+STATION_HTML_WITHOUT_COORDS = """
+<html><head><title>Ginometeo - Weathercloud</title></head>
+<body><p>no coords here</p></body></html>
+"""
+
+
+@responses.activate
+def test_get_station_info_fetches_location_from_html(client):
+    responses.get(
+        f"{BASE}/device/info/{DEVICE_ID}",
+        json={"device": {"city": "Ingelmunster", "altitude": "18.0",
+                         "status": "1", "update": "10", "account": "0"}},
+    )
+    responses.get(f"{BASE}/d{DEVICE_ID}", body=STATION_HTML_WITH_COORDS,
+                  content_type="text/html")
+
+    info = client.get_station_info(DEVICE_ID)
+
+    assert info.latitude == 50.8303345
+    assert info.longitude == 3.2696646
+    assert info.name == "Ginometeo"
+    # Only 2 requests: /device/info + /d{id}
+    assert len(responses.calls) == 2
+
+
+@responses.activate
+def test_get_station_info_location_none_when_coords_absent(client):
+    responses.get(
+        f"{BASE}/device/info/{DEVICE_ID}",
+        json={"device": {"city": "Ingelmunster", "status": "1",
+                         "update": "0", "account": "0"}},
+    )
+    responses.get(f"{BASE}/d{DEVICE_ID}", body=STATION_HTML_WITHOUT_COORDS,
+                  content_type="text/html")
+
+    info = client.get_station_info(DEVICE_ID)
+
+    assert info.latitude is None
+    assert info.longitude is None
+    assert info.name == "Ginometeo"
+
+
+@responses.activate
+def test_get_station_info_fetch_location_false_skips_html_scrape(client):
+    responses.get(
+        f"{BASE}/device/info/{DEVICE_ID}",
+        json={"device": {"city": "Ingelmunster", "status": "1",
+                         "update": "0", "account": "0"}},
+    )
+    # scrape_name=False AND fetch_location=False → no HTML request at all.
+
+    info = client.get_station_info(DEVICE_ID, scrape_name=False,
+                                   fetch_location=False)
+
+    assert info.latitude is None
+    assert info.longitude is None
+    assert info.name == DEVICE_ID
+    assert len(responses.calls) == 1  # only /device/info
+
+
+@responses.activate
+def test_get_station_info_scrape_name_false_fetch_location_true(client):
+    """fetch_location=True still works even when scrape_name=False — one HTML request."""
+    responses.get(
+        f"{BASE}/device/info/{DEVICE_ID}",
+        json={"device": {"city": "Ingelmunster", "status": "1",
+                         "update": "0", "account": "0"}},
+    )
+    responses.get(f"{BASE}/d{DEVICE_ID}", body=STATION_HTML_WITH_COORDS,
+                  content_type="text/html")
+
+    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=True)
+
+    # Name falls back to device_id since scrape_name=False
+    assert info.name == DEVICE_ID
+    # But coordinates are still populated
+    assert info.latitude == 50.8303345
+    assert info.longitude == 3.2696646
 
 
 @responses.activate
