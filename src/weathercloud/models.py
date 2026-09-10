@@ -54,7 +54,13 @@ class CurrentConditions:
 
 @dataclass
 class StationInfo:
-    """Station metadata combining ``/device/info`` and a scraped station name."""
+    """Station metadata combining ``/device/info`` and a scraped station page.
+
+    ``latitude`` and ``longitude`` are populated when ``get_station_info`` is
+    called with ``fetch_location=True`` (the default) by scraping the station's
+    HTML page (``/d{device_id}``). Both default to ``None`` if coordinates cannot
+    be scraped or if location fetching is disabled.
+    """
 
     device_id: str
     name: str            # scraped from HTML — not available via JSON API
@@ -63,3 +69,5 @@ class StationInfo:
     status: str          # "online" | "recently_online" | "offline"
     seconds_since_update: int
     account_type: int    # 0 = free, >0 = premium
+    latitude: float | None = None   # decimal degrees, None if unauthenticated or not found
+    longitude: float | None = None  # decimal degrees, None if unauthenticated or not found

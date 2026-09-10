@@ -293,19 +293,41 @@ class WeathercloudClient:
             inside_heat_index=_to_float(raw.get("heatin")),
         )
 
-    def get_station_info(self, device_id: str, scrape_name: bool = True) -> StationInfo:
+    def get_station_info(
+        self,
+        device_id: str,
+        scrape_name: bool = True,
+        fetch_location: bool = True,
+    ) -> StationInfo:
         """Return typed station metadata.
 
         Args:
             device_id: Station ID.
             scrape_name: Fetch the station name from HTML (one extra request).
                 Set to False to skip and use the device_id as the name instead.
+            fetch_location: Attempt to populate ``latitude`` and ``longitude`` by
+                scraping the station's HTML page (``/d{device_id}``). Works for
+                any public station without authentication. Set to ``False`` to skip.
+                When ``scrape_name`` is also ``True``, both are extracted in a
+                **single** HTML request. Silently sets both to ``None`` on failure.
         """
         raw = self._get_dict(f"/device/info/{device_id}")
         dev = raw.get("device") or {}
         if not isinstance(dev, dict):
             dev = {}
-        name = self.get_station_name(device_id) if scrape_name else device_id
+
+        # If we're scraping the HTML page anyway (for the name), extract lat/lon
+        # from the same response — zero extra network cost.
+        if scrape_name or fetch_location:
+            name, lat, lon = self._scrape_station_page(device_id)
+            if not scrape_name:
+                name = device_id
+            if not fetch_location:
+                lat, lon = None, None
+        else:
+            name = device_id
+            lat, lon = None, None
+
         return StationInfo(
             device_id=device_id,
             name=name,
@@ -314,13 +336,25 @@ class WeathercloudClient:
             status=_STATUS_MAP.get(str(dev.get("status", "")), "unknown"),
             seconds_since_update=_to_int(dev.get("update")) or 0,
             account_type=_to_int(dev.get("account")) or 0,
+            latitude=lat,
+            longitude=lon,
         )
 
-    def get_station_name(self, device_id: str) -> str:
-        """Scrape the station name from the HTML page.
+    def _scrape_station_page(
+        self, device_id: str
+    ) -> tuple[str, float | None, float | None]:
+        """Fetch ``/d{device_id}`` and return ``(name, latitude, longitude)``.
 
-        The name is not available via any JSON endpoint — it only appears in
-        the page ``<title>``. Returns *device_id* if the title cannot be found.
+        The station HTML page embeds coordinates as JavaScript variables::
+
+            var latitude = 50.912490705598024;
+            var longitude = 3.2479190826416016;
+
+        This works for any public station without authentication and costs zero
+        extra requests when the name is also being scraped.
+
+        Returns the device_id as the name fallback, and ``None`` for coordinates
+        if the respective values cannot be parsed.
         """
         url = f"{self._base_url}/d{device_id}"
         try:
@@ -333,10 +367,36 @@ class WeathercloudClient:
         except requests.RequestException as exc:
             raise WeathercloudError(f"Failed to fetch station page: {exc}") from exc
 
-        match = re.search(r"<title>(.*?)</title>", resp.text, re.IGNORECASE | re.DOTALL)
-        if match:
-            return match.group(1).split(" - Weathercloud")[0].strip()
-        return device_id
+        html = resp.text
+
+        # Station name — in the <title> tag.
+        name_match = re.search(r"<title>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
+        name = (
+            name_match.group(1).split(" - Weathercloud")[0].strip()
+            if name_match
+            else device_id
+        )
+
+        # Coordinates — embedded as JS variables: `var latitude = 50.91...;`
+        lat_match = re.search(r"var\s+latitude\s*=\s*([-\d.]+)\s*;", html)
+        lon_match = re.search(r"var\s+longitude\s*=\s*([-\d.]+)\s*;", html)
+        lat = _to_float(lat_match.group(1)) if lat_match else None
+        lon = _to_float(lon_match.group(1)) if lon_match else None
+
+        return name, lat, lon
+
+    def get_station_name(self, device_id: str) -> str:
+        """Scrape the station name from the HTML page.
+
+        The name is not available via any JSON endpoint — it only appears in
+        the page ``<title>``. Returns *device_id* if the title cannot be found.
+
+        .. note::
+            If you also need coordinates, call :meth:`get_station_info` with
+            ``fetch_location=True`` instead — it extracts both in a single request.
+        """
+        name, _, _ = self._scrape_station_page(device_id)
+        return name
 
     # ------------------------------------------------------------------
     # Raw API methods — return dicts for full access to the API response
