@@ -54,13 +54,12 @@ class CurrentConditions:
 
 @dataclass
 class StationInfo:
-    """Station metadata combining ``/device/info`` and a scraped station name.
+    """Station metadata combining ``/device/info`` and a scraped station page.
 
-    ``latitude`` and ``longitude`` are populated only when ``get_station_info`` is
-    called with ``fetch_location=True`` **and** the client is logged in (``/page/own``
-    is the only endpoint that returns coordinates and it requires authentication).
-    Both default to ``None`` so existing callers that skip location fetching are
-    unaffected.
+    ``latitude`` and ``longitude`` are populated when ``get_station_info`` is
+    called with ``fetch_location=True`` (the default) by scraping the station's
+    HTML page (``/d{device_id}``). Both default to ``None`` if coordinates cannot
+    be scraped or if location fetching is disabled.
     """
 
     device_id: str
