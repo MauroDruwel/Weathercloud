@@ -1,0 +1,1562 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Weathercloud Unofficial API",
+    "description": "Reverse-engineered API for [app.weathercloud.net](https://app.weathercloud.net).\n\n**No authentication required** — all endpoints work without any CSRF token or login.\n\n---\n\n### IDs\n\n| Type | Format | Example |\n|------|--------|---------|\n| Weather station | 10-digit numeric string | `5726468552` from `app.weathercloud.net/d5726468552` |\n| METAR / airport | ICAO code (4 letters) | `EBBR` for Brussels Airport |\n\n### METAR support\nMost `device/*` routes also work for METAR (airport) stations by swapping the prefix:\n`/device/values/{id}` → `/metar/values/{id}`\n\n### Rate limiting\nWeathercloud rate-limits API requests. Free stations update every **10 minutes**, paid stations every **1 minute** — avoid polling more frequently than that.\n\n---\n\n### Try it out\nRequests must go through the local proxy (handles CORS):\n```\npip install flask\npython proxy.py\n```\nThen use the **Servers** dropdown above to select `http://localhost:8765/proxy`.\n\n### Import into Postman\n**File → Import** → upload `docs/openapi.yaml` (or paste the raw URL of this file).\n\n---\n\n> **Home Assistant** — most useful endpoints:\n> - `GET /device/values/{deviceId}` — live sensor readings\n> - `GET /device/stats` — current + daily/monthly/yearly min/max\n> - `GET /device/info/{deviceId}` — station metadata\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Mauro Druwel",
+      "url": "https://github.com/MauroDruwel/Weathercloud"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/MauroDruwel/Weathercloud/blob/main/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://app.weathercloud.net",
+      "description": "Production Weathercloud API"
+    },
+    {
+      "url": "http://localhost:8765/proxy",
+      "description": "Local proxy — run `python docs/proxy.py` first (enables Try it out)"
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "Device (live)",
+      "description": "Real-time and current sensor data — most useful for Home Assistant"
+    },
+    {
+      "name": "Device (history)",
+      "description": "Historical data and time-series"
+    },
+    {
+      "name": "Forecast",
+      "description": "Weather forecast"
+    },
+    {
+      "name": "Map",
+      "description": "Map / nearby station discovery"
+    },
+    {
+      "name": "Pages",
+      "description": "Station listing pages"
+    },
+    {
+      "name": "Miscellaneous",
+      "description": "Undocumented tricks and HTML scraping"
+    },
+    {
+      "name": "Authentication",
+      "description": "User session and login endpoints"
+    }
+  ],
+  "paths": {
+    "/signin": {
+      "post": {
+        "operationId": "login",
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "User login / authentication",
+        "description": "Authenticates a user session to allow viewing private indoor sensors (`tempin`, `humin`, `heatin`) for the user's station.\nThis endpoint expects form urlencoded data and returns a `302 Found` redirect on successful login.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "LoginForm[entity]": {
+                    "type": "string",
+                    "description": "Username or email address"
+                  },
+                  "LoginForm[password]": {
+                    "type": "string",
+                    "description": "Account password"
+                  },
+                  "LoginForm[rememberMe]": {
+                    "type": "string",
+                    "enum": [
+                      "0",
+                      "1"
+                    ],
+                    "default": "1",
+                    "description": "Keep the user logged in"
+                  }
+                },
+                "required": [
+                  "LoginForm[entity]",
+                  "LoginForm[password]"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication failed (renders login form with errors)"
+          },
+          "302": {
+            "description": "Successful authentication redirecting to user profile",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "description": "Session cookies (e.g. `PHPSESSID`)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/values/{deviceId}": {
+      "get": {
+        "operationId": "getDeviceValues",
+        "tags": [
+          "Device (live)"
+        ],
+        "summary": "Current sensor readings ⭐",
+        "description": "Returns the latest sensor values for a device. **No CSRF token needed.**\nThis is the primary endpoint for a Home Assistant sensor integration.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/deviceIdPath"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current weather readings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceValues"
+                },
+                "example": {
+                  "epoch": 1779825116,
+                  "temp": 24.8,
+                  "dew": 15.2,
+                  "chill": 24.8,
+                  "heat": 24.8,
+                  "hum": 55,
+                  "bar": 1024.9,
+                  "wdir": 344,
+                  "wspd": 0.6,
+                  "wspdavg": 0.6,
+                  "wspdhi": 1,
+                  "rainrate": 0,
+                  "rain": 0,
+                  "solarrad": 0,
+                  "uvi": 0,
+                  "wdiravg": 344
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/stats": {
+      "get": {
+        "operationId": "getDeviceStats",
+        "tags": [
+          "Device (live)"
+        ],
+        "summary": "Current + min/max statistics ⭐",
+        "description": "Returns current values plus day/month/year min and max for all sensors.\nEach value is a `[unix_timestamp, value]` tuple.\n",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "5726468552"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistics for all sensors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/info/{deviceId}": {
+      "get": {
+        "operationId": "getDeviceInfo",
+        "tags": [
+          "Device (live)"
+        ],
+        "summary": "Station metadata ⭐",
+        "description": "Station name, location, elevation, equipment info.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/deviceIdPath"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Station metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/wind": {
+      "get": {
+        "operationId": "getWindRose",
+        "tags": [
+          "Device (live)"
+        ],
+        "summary": "Wind rose data",
+        "description": "Wind direction distribution data for the wind rose chart.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "5726468552"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wind rose data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WindData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/ajaxupdatedate": {
+      "post": {
+        "operationId": "getUpdateStatus",
+        "tags": [
+          "Device (live)"
+        ],
+        "summary": "Last update time + status",
+        "description": "Returns seconds since last update and device online status.\n\n> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "d"
+                ],
+                "properties": {
+                  "d": {
+                    "type": "string",
+                    "description": "Device ID",
+                    "example": "5726468552"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update date info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "update": {
+                      "type": "integer",
+                      "description": "Seconds since last update",
+                      "example": 71
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "\"1\" = online, \"2\" = recently online, \"3\" = offline",
+                      "example": "2"
+                    },
+                    "server_time": {
+                      "type": "integer",
+                      "description": "Current server Unix timestamp",
+                      "example": 1779825187
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/ajaxprofile": {
+      "post": {
+        "operationId": "getOwnerProfile",
+        "tags": [
+          "Device (live)"
+        ],
+        "summary": "Station owner profile",
+        "description": "Returns observer name, follower count, and device brand/model.\n\n> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "d"
+                ],
+                "properties": {
+                  "d": {
+                    "type": "string",
+                    "example": "5726468552"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceProfile"
+                },
+                "example": {
+                  "observer": {
+                    "name": "Gino Wallaert",
+                    "nickname": "Ginometeo",
+                    "company": ""
+                  },
+                  "followers": {
+                    "number": "1"
+                  },
+                  "device": {
+                    "brand": "Other",
+                    "model": "Other"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device/evolution": {
+      "post": {
+        "operationId": "getEvolution",
+        "tags": [
+          "Device (history)"
+        ],
+        "summary": "Time-series history for a variable",
+        "description": "Returns hourly aggregated history for a given variable and period.\n\n> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.\n\n**Variable codes:**\n| Code | Sensor |\n|------|--------|\n| 101  | Temperature (°C) |\n| 201  | Humidity (%) |\n| 541  | Dew point (°C) |\n| 641  | Barometric pressure (hPa) |\n| 701  | Wind speed (m/s) |\n| 6001 | Wind direction (°) |\n| 6501 | Wind gust / high speed (m/s) |\n| 801  | Rain (mm) |\n| 811  | Rain rate (mm/h) |\n| 1001 | Solar radiation (W/m²) |\n| 1101 | UV index |\n\n**Period values:** `day`, `week`, `month`, `year`\n",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "device",
+                  "variable",
+                  "period"
+                ],
+                "properties": {
+                  "device": {
+                    "type": "string",
+                    "example": "5726468552"
+                  },
+                  "variable": {
+                    "type": "integer",
+                    "enum": [
+                      101,
+                      201,
+                      541,
+                      641,
+                      701,
+                      6001,
+                      6501,
+                      801,
+                      811,
+                      1001,
+                      1101
+                    ],
+                    "example": 101
+                  },
+                  "period": {
+                    "type": "string",
+                    "enum": [
+                      "day",
+                      "week",
+                      "month",
+                      "year"
+                    ],
+                    "example": "day"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Time-series evolution data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvolutionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/forecast/daily": {
+      "get": {
+        "operationId": "getForecast",
+        "tags": [
+          "Forecast"
+        ],
+        "summary": "Daily weather forecast",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "5726468552"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily forecast (6 days from WMO)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                },
+                "example": {
+                  "info": {
+                    "source": "WMO",
+                    "web": "https://worldweather.wmo.int",
+                    "days": 6
+                  },
+                  "location": {
+                    "name": "Ingelmunster"
+                  },
+                  "forecast": {
+                    "2026-05-28": {
+                      "weather": {
+                        "code": 12
+                      },
+                      "temperature": {
+                        "max": 29,
+                        "min": 16
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/map/devices": {
+      "post": {
+        "operationId": "getMapDevices",
+        "tags": [
+          "Map"
+        ],
+        "summary": "Stations on map within area",
+        "description": "Returns stations visible on the map for a given location bounding box.\n\n> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "string",
+                    "description": "Filter by user (empty = all)"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "lat,lon,zoom format",
+                    "example": "50.9,3.1,10"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stations on the map as arrays of scaled values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/map/bgdevices": {
+      "post": {
+        "operationId": "getMapBgDevices",
+        "tags": [
+          "Map"
+        ],
+        "summary": "Background/inactive stations on map",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inactive/background stations (same array format as /map/devices)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/map/metars": {
+      "post": {
+        "operationId": "getMapMetars",
+        "tags": [
+          "Map"
+        ],
+        "summary": "METAR airport observations on map",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "METAR airport observations as arrays",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "metars": {
+                      "type": "array",
+                      "description": "Each entry: `[icao, city, lat, lon, status, 0, wdir, hum, bar*10, wspd*10, wdir2, 0, \"\", \"\", \"\"]`\n",
+                      "items": {
+                        "type": "array",
+                        "example": [
+                          "EBBR",
+                          "Brussels",
+                          50.9014,
+                          4.4844,
+                          2,
+                          0,
+                          260,
+                          58,
+                          10220,
+                          80,
+                          260,
+                          0,
+                          "",
+                          "",
+                          ""
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/page/coordinates/latitude/{lat}/longitude/{lon}/distance/{km}": {
+      "get": {
+        "operationId": "getNearbyStations",
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Stations near coordinates ⭐",
+        "description": "Returns nearby stations as JSON (despite `text/html` content-type header).\nAll `page/*` endpoints return `PageDevice` objects that include the **station name**.\nValues are scaled integers — divide by 10 (e.g. `temp: 281` = 28.1°C).\n",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "example": 50.9475
+          },
+          {
+            "name": "lon",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "example": 3.1205
+          },
+          {
+            "name": "km",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 5
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nearby stations with name, coordinates and current values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/page/popular/country/{country}/period/{period}": {
+      "get": {
+        "operationId": "getPopularStations",
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Popular stations by country",
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "BE"
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ]
+            },
+            "example": "day"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Popular stations with name and current values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/page/newest/country/{country}": {
+      "get": {
+        "operationId": "getNewestStations",
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Newest stations by country",
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "BE"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newest stations with name and current values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/page/followers/country/{country}": {
+      "get": {
+        "operationId": "getMostFollowedStations",
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Most followed stations by country",
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "BE"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Most followed stations with name and current values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/page/lastviews": {
+      "get": {
+        "operationId": "getLastViewedStations",
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Recently viewed stations",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Last viewed stations (empty array if not logged in)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/page/own": {
+      "get": {
+        "operationId": "getOwnStations",
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Own stations (requires login)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your stations (empty array if not logged in)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDevicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metar/values/{deviceId}": {
+      "get": {
+        "operationId": "getMetarValues",
+        "tags": [
+          "Miscellaneous"
+        ],
+        "summary": "METAR station — current readings",
+        "description": "Most `device/*` routes work identically for METAR (airport) stations by replacing the `device` prefix with `metar`.\n\nMETAR station IDs are **ICAO codes** (4 letters), e.g. `EBBR` for Brussels Airport.\n\n**Supported `metar/*` routes (same request/response as their `device/*` counterparts):**\n- `GET /metar/values/{icao}` — current readings\n- `GET /metar/stats?code={icao}` — statistics\n- `GET /metar/wind?code={icao}` — wind rose\n- `GET /metar/info/{icao}` — station metadata\n- `POST /metar/ajaxupdatedate` — last update time\n- `POST /metar/ajaxprofile` — station profile\n- `POST /metar/evolution` — time-series history\n\n> **Not supported for METAR:** `/device/ajaxdevicestats`\n",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "description": "ICAO airport code",
+            "schema": {
+              "type": "string"
+            },
+            "example": "EBBR"
+          },
+          {
+            "$ref": "#/components/parameters/xRequestedWith"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Same structure as `/device/values/{deviceId}`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceValues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/d{deviceId}": {
+      "get": {
+        "operationId": "getStationPage",
+        "tags": [
+          "Miscellaneous"
+        ],
+        "summary": "Station HTML page (scrape station name)",
+        "description": "The station **name** is not available from any JSON API endpoint.\nThe easiest way to get it is to fetch the station's HTML page and extract\nthe name from the `<title>` or `og:title` meta tag.\n\n**Example response title:**\n```\nWeatherStation Skyline - Weathercloud | Global network of weather stations\n```\n\nStrip everything from ` - Weathercloud` onward to get the clean station name.\n\n> This is a plain HTML page, not a JSON API. Use it for scraping only.\n",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0826505936"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page — extract station name from `<title>` or `<meta property=\"og:title\">`",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "deviceIdPath": {
+        "name": "deviceId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "5726468552"
+      },
+      "xRequestedWith": {
+        "name": "X-Requested-With",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "default": "XMLHttpRequest"
+        }
+      }
+    },
+    "schemas": {
+      "DeviceValues": {
+        "type": "object",
+        "description": "Live sensor readings",
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "description": "Unix timestamp of reading"
+          },
+          "temp": {
+            "type": "number",
+            "description": "Temperature (°C)"
+          },
+          "dew": {
+            "type": "number",
+            "description": "Dew point (°C)"
+          },
+          "chill": {
+            "type": "number",
+            "description": "Wind chill (°C)"
+          },
+          "heat": {
+            "type": "number",
+            "description": "Heat index (°C)"
+          },
+          "hum": {
+            "type": "integer",
+            "description": "Relative humidity (%)"
+          },
+          "bar": {
+            "type": "number",
+            "description": "Barometric pressure (hPa)"
+          },
+          "wdir": {
+            "type": "integer",
+            "description": "Instantaneous wind direction (°)"
+          },
+          "wdiravg": {
+            "type": "integer",
+            "description": "Average wind direction (°)"
+          },
+          "wspd": {
+            "type": "number",
+            "description": "Instantaneous wind speed (m/s)"
+          },
+          "wspdavg": {
+            "type": "number",
+            "description": "Average wind speed (m/s)"
+          },
+          "wspdhi": {
+            "type": "number",
+            "description": "Wind gust / high speed (m/s)"
+          },
+          "rainrate": {
+            "type": "number",
+            "description": "Rain rate (mm/h)"
+          },
+          "rain": {
+            "type": "number",
+            "description": "Total rain (mm)"
+          },
+          "solarrad": {
+            "type": "number",
+            "description": "Solar radiation (W/m²)"
+          },
+          "uvi": {
+            "type": "number",
+            "description": "UV index (standard units, not ×10 — can be fractional, e.g. 0.9)"
+          },
+          "tempin": {
+            "type": "number",
+            "description": "Inside temperature (°C) — requires authentication"
+          },
+          "humin": {
+            "type": "integer",
+            "description": "Inside relative humidity (%) — requires authentication"
+          },
+          "heatin": {
+            "type": "number",
+            "description": "Inside heat index (°C) — requires authentication"
+          }
+        }
+      },
+      "DeviceStats": {
+        "type": "object",
+        "description": "Current readings and period statistics for all sensors.\nAll values are `[unix_timestamp, value]` tuples (`TimestampValue`).\n\n**Key pattern:** `{sensor}_{period}_{type}`\n- Sensors: `temp`, `tempin`, `dew`, `chill`, `heat`, `heatin`, `hum`, `humin`, `bar`, `wdir`, `wdiravg`, `wspd`, `wspdavg`, `wspdhi`, `rainrate`, `rain`, `solarrad`, `uvi`\n- Period types: `current`, `day_max`, `day_min`, `month_max`, `month_min`, `year_max`, `year_min`\n- Rain also has: `day_total`, `month_total`, `year_total`\n- Solarrad also has: `day_hours`, `month_hours`, `year_hours`\n",
+        "properties": {
+          "last_update": {
+            "type": "integer",
+            "description": "Unix timestamp of last reading"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/components/schemas/TimestampValue"
+        }
+      },
+      "TimestampValue": {
+        "type": "array",
+        "description": "[unix_timestamp, value]",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2,
+        "example": [
+          1779825116,
+          24.8
+        ]
+      },
+      "DeviceInfo": {
+        "type": "object",
+        "description": "Station metadata and current sensor snapshot.\nNote: sensor values are returned as strings; unavailable sensors show `-3276.8` / `-32768`.\n",
+        "properties": {
+          "device": {
+            "type": "object",
+            "properties": {
+              "account": {
+                "type": "integer",
+                "description": "Account type (0 = free)"
+              },
+              "status": {
+                "type": "string",
+                "description": "\"1\" = online, \"2\" = recently online, \"3\" = offline"
+              },
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "altitude": {
+                "type": "string",
+                "description": "Altitude in metres (as string)"
+              },
+              "image": {
+                "type": "string",
+                "nullable": true,
+                "description": "URL to station photo, or null"
+              },
+              "isWebcam": {
+                "type": "boolean"
+              },
+              "favorite": {
+                "type": "boolean"
+              },
+              "social": {
+                "type": "boolean"
+              },
+              "update": {
+                "type": "integer",
+                "description": "Seconds since last update"
+              }
+            }
+          },
+          "values": {
+            "type": "object",
+            "description": "Current sensor readings as strings.\nUnavailable sensors return `\"-3276.8\"` (float sensors) or `\"-32768\"` (integer sensors).\n",
+            "properties": {
+              "temp": {
+                "type": "string",
+                "description": "Temperature (°C)"
+              },
+              "hum": {
+                "type": "string",
+                "description": "Relative humidity (%)"
+              },
+              "dew": {
+                "type": "string",
+                "description": "Dew point (°C)"
+              },
+              "wspdavg": {
+                "type": "string",
+                "description": "Average wind speed (m/s)"
+              },
+              "wdiravg": {
+                "type": "string",
+                "description": "Average wind direction (°)"
+              },
+              "bar": {
+                "type": "string",
+                "description": "Barometric pressure (hPa)"
+              },
+              "rain": {
+                "type": "string",
+                "description": "Total rain (mm)"
+              },
+              "rainrate": {
+                "type": "string",
+                "description": "Rain rate (mm/h)"
+              },
+              "solarrad": {
+                "type": "string",
+                "description": "Solar radiation (W/m²)"
+              },
+              "uvi": {
+                "type": "string",
+                "description": "UV index"
+              }
+            }
+          }
+        }
+      },
+      "DeviceProfile": {
+        "type": "object",
+        "properties": {
+          "observer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "nickname": {
+                "type": "string"
+              },
+              "company": {
+                "type": "string"
+              }
+            }
+          },
+          "followers": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "string"
+              }
+            }
+          },
+          "device": {
+            "type": "object",
+            "properties": {
+              "brand": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "WindData": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "integer",
+            "description": "Unix timestamp (start of period)"
+          },
+          "values": {
+            "type": "array",
+            "description": "16 compass directions, each with sum and scale array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sum": {
+                  "type": "number"
+                },
+                "scale": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "EvolutionResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "timezone": {
+                "type": "string",
+                "example": "Europe/Brussels"
+              },
+              "summary": {
+                "type": "object",
+                "description": "Keyed by variable code (e.g. \"101\")",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "samples": {
+                      "type": "integer"
+                    },
+                    "sum": {
+                      "type": "number"
+                    },
+                    "min": {
+                      "type": "number"
+                    },
+                    "min_time": {
+                      "type": "integer"
+                    },
+                    "max": {
+                      "type": "number"
+                    },
+                    "max_time": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "values": {
+                "type": "object",
+                "description": "Keyed by Unix timestamp (hour buckets), then by variable code.\nEach entry has `samples` and `stats`.\n",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "samples": {
+                        "type": "integer"
+                      },
+                      "stats": {
+                        "type": "object",
+                        "properties": {
+                          "sum": {
+                            "type": "number"
+                          },
+                          "min": {
+                            "type": "number"
+                          },
+                          "min_time": {
+                            "type": "integer"
+                          },
+                          "max": {
+                            "type": "number"
+                          },
+                          "max_time": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PageDevice": {
+        "type": "object",
+        "description": "Station entry returned by page/coordinates",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "device"
+          },
+          "code": {
+            "type": "string",
+            "description": "Device ID (numeric string)",
+            "example": "2034767194"
+          },
+          "name": {
+            "type": "string",
+            "description": "Station name as set by the owner",
+            "example": "WeatherStation Skyline"
+          },
+          "city": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          },
+          "elevation": {
+            "type": "string",
+            "description": "Altitude in metres"
+          },
+          "image": {
+            "type": "string"
+          },
+          "isWebcam": {
+            "type": "boolean"
+          },
+          "account": {
+            "type": "integer"
+          },
+          "isFavorite": {
+            "type": "boolean"
+          },
+          "update": {
+            "type": "integer",
+            "description": "Seconds since last update"
+          },
+          "data": {
+            "type": "string",
+            "description": "Distance from query point (km)"
+          },
+          "values": {
+            "type": "object",
+            "description": "Scaled integer sensor readings — divide by 10 for most values.\ne.g. `temp: 281` → 28.1°C, `bar: 10247` → 1024.7 hPa, `uvi: 70` → UV 7.0\n",
+            "properties": {
+              "epoch": {
+                "type": "string"
+              },
+              "temp": {
+                "type": "string"
+              },
+              "hum": {
+                "type": "string"
+              },
+              "dew": {
+                "type": "string"
+              },
+              "chill": {
+                "type": "string"
+              },
+              "heat": {
+                "type": "string"
+              },
+              "bar": {
+                "type": "string"
+              },
+              "wdir": {
+                "type": "string"
+              },
+              "wspd": {
+                "type": "string"
+              },
+              "wspdavg": {
+                "type": "string"
+              },
+              "wspdhi": {
+                "type": "string"
+              },
+              "rainrate": {
+                "type": "string"
+              },
+              "rain": {
+                "type": "string"
+              },
+              "solarrad": {
+                "type": "string"
+              },
+              "uvi": {
+                "type": "string"
+              },
+              "tempin": {
+                "type": "string",
+                "description": "Indoor temperature (°C, scaled ×10) — if sensor present"
+              },
+              "humin": {
+                "type": "string",
+                "description": "Indoor humidity (%, scaled ×10) — if sensor present"
+              }
+            }
+          }
+        }
+      },
+      "PageDevicesResponse": {
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageDevice"
+            }
+          }
+        }
+      },
+      "ForecastResponse": {
+        "type": "object",
+        "properties": {
+          "info": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "example": "WMO"
+              },
+              "web": {
+                "type": "string",
+                "example": "https://worldweather.wmo.int"
+              },
+              "days": {
+                "type": "integer",
+                "example": 6
+              }
+            }
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Nearest city name",
+                "example": "Ingelmunster"
+              }
+            }
+          },
+          "forecast": {
+            "type": "object",
+            "description": "Keyed by date string (YYYY-MM-DD)",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "weather": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "description": "WMO weather interpretation code"
+                    }
+                  }
+                },
+                "temperature": {
+                  "type": "object",
+                  "properties": {
+                    "max": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "min": {
+                      "type": "integer",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MapDevicesResponse": {
+        "type": "object",
+        "description": "Stations as compact arrays. Also contains `owner` and `favorites` arrays (empty unless logged in).\n",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "description": "Each entry is an array:\n`[id, city, lat, lon, status, 0, temp×10, hum, bar×10, wspd×10, wdir, rainrate×10, rain×10, solarrad×10, uvi×10]`\n\n- `status`: 1=online, 2=recently online, 3=offline\n- Divide index 6 and above by 10 to get real units\n",
+            "items": {
+              "type": "array",
+              "example": [
+                "RWACTX",
+                "Wilsele-Herent",
+                50.904295,
+                4.69565,
+                2,
+                0,
+                277,
+                54,
+                10270,
+                19,
+                336,
+                0,
+                0,
+                8050,
+                47
+              ]
+            }
+          },
+          "owner": {
+            "type": "array",
+            "description": "Owner's own stations (empty if not logged in)",
+            "items": {
+              "type": "array"
+            }
+          },
+          "favorites": {
+            "type": "array",
+            "description": "Favourite stations (empty if not logged in)",
+            "items": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    }
+  }
+}
