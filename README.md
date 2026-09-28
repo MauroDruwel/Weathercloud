@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/weathercloud.svg)](https://pypi.org/project/weathercloud/)
 [![Python](https://img.shields.io/pypi/pyversions/weathercloud.svg)](https://pypi.org/project/weathercloud/)
 [![CI](https://github.com/MauroDruwel/Weathercloud/actions/workflows/ci.yml/badge.svg)](https://github.com/MauroDruwel/Weathercloud/actions/workflows/ci.yml)
+[![Cloudflare Forge](https://github.com/MauroDruwel/Weathercloud/actions/workflows/forge.yml/badge.svg)](https://github.com/MauroDruwel/Weathercloud/actions/workflows/forge.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Unofficial, fully-typed Python client for [Weathercloud](https://app.weathercloud.net).
@@ -168,7 +169,8 @@ METAR (airport) stations use ICAO codes (`EBBR`, `EGLL`, …) and work on most
 
 - 🔓 No authentication required for public endpoints (recommended). Supply credentials only if you need to fetch private inside sensors of a station you own.
 - ⏱️ Poll at most every 10 minutes — that's how often free stations update.
-- 🧭 Based on the [reverse-engineered OpenAPI spec](./docs/openapi.yaml) in this repo.
+- 🧭 Based on the [reverse-engineered OpenAPI spec](./openapi.yaml) in this repo (`openapi.yaml` & `openapi.json`).
+- ⚡ **Cloudflare Forge Pipeline**: Automated OpenAPI validation and SDK/CLI generation via [`.github/workflows/forge.yml`](./.github/workflows/forge.yml).
 
 ## 🛠️ Development
 
