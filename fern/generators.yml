@@ -1,0 +1,10 @@
+api:
+  specs:
+    - openapi: ../openapi.yaml
+      settings:
+        only-include-referenced-schemas: false
+        object-query-parameters: true
+        respect-nullable-schemas: true
+        coerce-enums-to-literals: true
+        path-parameter-order: url-order
+        resolve-schema-collisions: true

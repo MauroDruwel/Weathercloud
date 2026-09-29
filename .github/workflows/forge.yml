@@ -1,0 +1,89 @@
+name: Cloudflare Forge Pipeline
+
+on:
+  push:
+    branches:
+      - feat/forge-pipeline
+      - main
+    paths:
+      - 'openapi.yaml'
+      - 'fern/**'
+      - '.github/workflows/forge.yml'
+  pull_request:
+    paths:
+      - 'openapi.yaml'
+      - 'fern/**'
+      - '.github/workflows/forge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate_and_generate:
+    name: Validate OpenAPI, Fern & Generate Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate OpenAPI specification
+        run: |
+          npx --yes @redocly/cli lint openapi.yaml --skip-rule operation-4xx-response
+          echo "✓ openapi.yaml is valid and conforms to Forge extensions"
+
+      - name: Validate Fern definition
+        run: |
+          npx --yes fern-api check
+          echo "✓ Fern workspace and docs configuration passed verification"
+
+      - name: Generate Scalar API Documentation for Cloudflare Pages
+        run: |
+          npx --yes @redocly/cli bundle openapi.yaml -o /tmp/bundled-spec.json --ext json
+          node -e "
+            const fs = require('fs');
+            const specJson = fs.readFileSync('/tmp/bundled-spec.json', 'utf8').trim();
+            const html = \`<!doctype html>
+          <html lang=\"en\">
+            <head>
+              <meta charset=\"utf-8\" />
+              <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+              <title>Weathercloud API Reference</title>
+              <link rel=\"icon\" type=\"image/svg+xml\" href=\"https://app.weathercloud.net/favicon.ico\" />
+              <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />
+              <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />
+              <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap\" rel=\"stylesheet\" />
+              <style>
+                :root {
+                  --scalar-font: 'Inter', system-ui, -apple-system, sans-serif;
+                  --scalar-font-code: 'JetBrains Mono', ui-monospace, monospace;
+                  --scalar-color-1: #f6821f;
+                  --scalar-color-accent: #f6821f;
+                }
+              </style>
+            </head>
+            <body>
+              <script
+                id=\"api-reference\"
+                type=\"application/json\"
+                data-configuration='{\"theme\":\"saturn\",\"darkMode\":true,\"layout\":\"modern\",\"showSidebar\":true,\"searchHotKey\":\"k\",\"defaultHttpClient\":{\"targetKey\":\"python\",\"clientKey\":\"requests\"}}'>
+          \${specJson}
+              </script>
+              <script src=\"https://cdn.jsdelivr.net/npm/@scalar/api-reference\"></script>
+            </body>
+          </html>\`;
+            fs.writeFileSync('docs/index.html', html);
+          "
+          echo "✓ Generated standalone Scalar API Reference in docs/index.html"
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/index.html
+          retention-days: 14
