@@ -8,13 +8,11 @@ on:
     paths:
       - 'openapi.yaml'
       - 'fern/**'
-      - 'scripts/generate_docs.py'
       - '.github/workflows/forge.yml'
   pull_request:
     paths:
       - 'openapi.yaml'
       - 'fern/**'
-      - 'scripts/generate_docs.py'
       - '.github/workflows/forge.yml'
   workflow_dispatch:
 
@@ -34,11 +32,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Validate OpenAPI specification
         run: |
           npx --yes @redocly/cli lint openapi.yaml --skip-rule operation-4xx-response
@@ -49,10 +42,15 @@ jobs:
           npx --yes fern-api check
           echo "✓ Fern workspace and docs configuration passed verification"
 
-      - name: Generate Fern / Cloudflare Docs UI
+      - name: Generate API Documentation for Cloudflare Pages
         run: |
-          python3 scripts/generate_docs.py
-          echo "✓ Generated standalone Fern / Cloudflare Docs UI in docs/index.html"
+          npx --yes @redocly/cli build-docs openapi.yaml -o docs/index.html \
+            --title "Weathercloud API Reference" \
+            --theme.openapi.colors.primary.main="#f6821f" \
+            --theme.openapi.sidebar.backgroundColor="#0f172a" \
+            --theme.openapi.sidebar.textColor="#f8fafc" \
+            --theme.openapi.rightPanel.backgroundColor="#0b0f19"
+          echo "✓ Generated documentation in docs/index.html using official CLI"
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
