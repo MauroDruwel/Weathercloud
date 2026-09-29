@@ -169,7 +169,7 @@ METAR (airport) stations use ICAO codes (`EBBR`, `EGLL`, …) and work on most
 
 - 🔓 No authentication required for public endpoints (recommended). Supply credentials only if you need to fetch private inside sensors of a station you own.
 - ⏱️ Poll at most every 10 minutes — that's how often free stations update.
-- 🧭 Based on the [reverse-engineered OpenAPI spec](./openapi.yaml) in this repo (`openapi.yaml` & `openapi.json`).
+- 🧭 Based on the [reverse-engineered OpenAPI spec](./openapi.yaml) in this repo.
 - ⚡ **Cloudflare Forge Pipeline**: Automated OpenAPI validation and SDK/CLI generation via [`.github/workflows/forge.yml`](./.github/workflows/forge.yml).
 
 ## 🛠️ Development
@@ -189,17 +189,10 @@ python -m build   # build sdist + wheel
 CI runs the linter, type checker, and the test matrix (Python 3.10–3.13) on every
 push and pull request.
 
-### Local API explorer (Swagger UI)
+### API Documentation & Explorer
 
-A Swagger UI is hosted at
-**[weathercloud-api.maurodruwel.be](https://weathercloud-api.maurodruwel.be)**, or
-run it locally against a small CORS proxy:
-
-```sh
-pip install flask
-python docs/proxy.py   # serves the proxy + Swagger UI on :8765
-# then open docs/index.html
-```
+The API specification is formally defined in [`openapi.yaml`](./openapi.yaml) using **Cloudflare Forge** specification extensions (`x-fern-*` & `x-forge-*`).
+Automated API documentation is generated via the Cloudflare Forge pipeline and published to **[weathercloud-api.maurodruwel.be](https://weathercloud-api.maurodruwel.be)**.
 
 ## 📄 License
 
