@@ -24,16 +24,8 @@ info:
 
     ---
 
-    ### Try it out
-    Requests must go through the local proxy (handles CORS):
-    ```
-    pip install flask
-    python proxy.py
-    ```
-    Then use the **Servers** dropdown above to select `http://localhost:8765/proxy`.
-
-    ### Import into Postman
-    **File → Import** → upload `docs/openapi.yaml` (or paste the raw URL of this file).
+    ### Import into Postman / API tools
+    **File → Import** → upload `openapi.yaml` (or paste the raw URL of this file).
 
     ---
 
@@ -52,8 +44,6 @@ info:
 servers:
   - url: https://app.weathercloud.net
     description: Production Weathercloud API
-  - url: http://localhost:8765/proxy
-    description: Local proxy — run `python docs/proxy.py` first (enables Try it out)
 
 security: []
 
@@ -78,6 +68,9 @@ paths:
   /signin:
     post:
       operationId: login
+      x-fern-sdk-group-name: auth
+      x-fern-sdk-method-name: login
+      x-fern-availability: generally-available
       tags: [Authentication]
       summary: User login / authentication
       description: |
@@ -118,6 +111,9 @@ paths:
   /device/values/{deviceId}:
     get:
       operationId: getDeviceValues
+      x-fern-sdk-group-name: device.live
+      x-fern-sdk-method-name: getValues
+      x-fern-availability: generally-available
       tags: [Device (live)]
       summary: Current sensor readings ⭐
       description: |
@@ -154,6 +150,9 @@ paths:
   /device/stats:
     get:
       operationId: getDeviceStats
+      x-fern-sdk-group-name: device.live
+      x-fern-sdk-method-name: getStats
+      x-fern-availability: generally-available
       tags: [Device (live)]
       summary: Current + min/max statistics ⭐
       description: |
@@ -178,6 +177,9 @@ paths:
   /device/info/{deviceId}:
     get:
       operationId: getDeviceInfo
+      x-fern-sdk-group-name: device.live
+      x-fern-sdk-method-name: getInfo
+      x-fern-availability: generally-available
       tags: [Device (live)]
       summary: Station metadata ⭐
       description: Station name, location, elevation, equipment info.
@@ -195,6 +197,9 @@ paths:
   /device/wind:
     get:
       operationId: getWindRose
+      x-fern-sdk-group-name: device.live
+      x-fern-sdk-method-name: getWindRose
+      x-fern-availability: generally-available
       tags: [Device (live)]
       summary: Wind rose data
       description: Wind direction distribution data for the wind rose chart.
@@ -217,6 +222,9 @@ paths:
   /device/ajaxupdatedate:
     post:
       operationId: getUpdateStatus
+      x-fern-sdk-group-name: device.live
+      x-fern-sdk-method-name: getUpdateStatus
+      x-fern-availability: generally-available
       tags: [Device (live)]
       summary: Last update time + status
       description: |
@@ -260,6 +268,9 @@ paths:
   /device/ajaxprofile:
     post:
       operationId: getOwnerProfile
+      x-fern-sdk-group-name: device.live
+      x-fern-sdk-method-name: getOwnerProfile
+      x-fern-availability: generally-available
       tags: [Device (live)]
       summary: Station owner profile
       description: |
@@ -299,6 +310,9 @@ paths:
   /device/evolution:
     post:
       operationId: getEvolution
+      x-fern-sdk-group-name: device.history
+      x-fern-sdk-method-name: getEvolution
+      x-fern-availability: generally-available
       tags: [Device (history)]
       summary: Time-series history for a variable
       description: |
@@ -353,6 +367,9 @@ paths:
   /forecast/daily:
     get:
       operationId: getForecast
+      x-fern-sdk-group-name: forecast
+      x-fern-sdk-method-name: getDaily
+      x-fern-availability: generally-available
       tags: [Forecast]
       summary: Daily weather forecast
       parameters:
@@ -388,6 +405,9 @@ paths:
   /map/devices:
     post:
       operationId: getMapDevices
+      x-fern-sdk-group-name: map
+      x-fern-sdk-method-name: getDevices
+      x-fern-availability: generally-available
       tags: [Map]
       summary: Stations on map within area
       description: |
@@ -420,6 +440,9 @@ paths:
   /map/bgdevices:
     post:
       operationId: getMapBgDevices
+      x-fern-sdk-group-name: map
+      x-fern-sdk-method-name: getBackgroundDevices
+      x-fern-availability: generally-available
       tags: [Map]
       summary: Background/inactive stations on map
       parameters:
@@ -443,6 +466,9 @@ paths:
   /map/metars:
     post:
       operationId: getMapMetars
+      x-fern-sdk-group-name: map
+      x-fern-sdk-method-name: getMetars
+      x-fern-availability: generally-available
       tags: [Map]
       summary: METAR airport observations on map
       parameters:
@@ -472,6 +498,9 @@ paths:
   /page/coordinates/latitude/{lat}/longitude/{lon}/distance/{km}:
     get:
       operationId: getNearbyStations
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getNearby
+      x-fern-availability: generally-available
       tags: [Pages]
       summary: Stations near coordinates ⭐
       description: |
@@ -509,6 +538,9 @@ paths:
   /page/popular/country/{country}/period/{period}:
     get:
       operationId: getPopularStations
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getPopular
+      x-fern-availability: generally-available
       tags: [Pages]
       summary: Popular stations by country
       parameters:
@@ -537,6 +569,9 @@ paths:
   /page/newest/country/{country}:
     get:
       operationId: getNewestStations
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getNewest
+      x-fern-availability: generally-available
       tags: [Pages]
       summary: Newest stations by country
       parameters:
@@ -558,6 +593,9 @@ paths:
   /page/followers/country/{country}:
     get:
       operationId: getMostFollowedStations
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getMostFollowed
+      x-fern-availability: generally-available
       tags: [Pages]
       summary: Most followed stations by country
       parameters:
@@ -579,6 +617,9 @@ paths:
   /page/lastviews:
     get:
       operationId: getLastViewedStations
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getLastViews
+      x-fern-availability: generally-available
       tags: [Pages]
       summary: Recently viewed stations
       parameters:
@@ -594,6 +635,9 @@ paths:
   /page/own:
     get:
       operationId: getOwnStations
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getOwn
+      x-fern-availability: generally-available
       tags: [Pages]
       summary: Own stations (requires login)
       parameters:
@@ -609,6 +653,9 @@ paths:
   /metar/values/{deviceId}:
     get:
       operationId: getMetarValues
+      x-fern-sdk-group-name: metar
+      x-fern-sdk-method-name: getValues
+      x-fern-availability: generally-available
       tags: [Miscellaneous]
       summary: METAR station — current readings
       description: |
@@ -646,6 +693,9 @@ paths:
   /d{deviceId}:
     get:
       operationId: getStationPage
+      x-fern-sdk-group-name: stations
+      x-fern-sdk-method-name: getStationPage
+      x-fern-availability: generally-available
       tags: [Miscellaneous]
       summary: Station HTML page (scrape station name)
       description: |

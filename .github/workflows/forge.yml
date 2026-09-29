@@ -1,4 +1,4 @@
-name: Cloudflare Forge SDK Pipeline
+name: Cloudflare Forge Pipeline
 
 on:
   push:
@@ -6,17 +6,11 @@ on:
       - feat/forge-pipeline
       - main
     paths:
-      - 'openapi.json'
       - 'openapi.yaml'
-      - 'docs/openapi.yaml'
-      - 'docs/openapi.json'
       - '.github/workflows/forge.yml'
   pull_request:
     paths:
-      - 'openapi.json'
       - 'openapi.yaml'
-      - 'docs/openapi.yaml'
-      - 'docs/openapi.json'
       - '.github/workflows/forge.yml'
   workflow_dispatch:
 
@@ -25,6 +19,7 @@ permissions:
 
 jobs:
   validate_and_generate:
+    name: Validate OpenAPI & Generate Docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -35,10 +30,23 @@ jobs:
         with:
           node-version: 20
 
-      - name: Validate OpenAPI spec syntax
+      - name: Validate OpenAPI specification
         run: |
-          python3 -c "import json; json.load(open('openapi.json')); print('✓ openapi.json is valid JSON')"
-          npx --yes @redocly/cli lint openapi.json --skip-rule no-empty-servers --skip-rule operation-4xx-response || true
+          npx --yes @redocly/cli lint openapi.yaml --skip-rule operation-4xx-response
+          echo "✓ openapi.yaml is valid and conforms to Forge extensions"
+
+      - name: Auto-generate API documentation
+        run: |
+          mkdir -p dist
+          npx --yes @redocly/cli build-docs openapi.yaml --output dist/index.html
+          echo "✓ Generated standalone API documentation in dist/index.html"
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: dist/index.html
+          retention-days: 14
 
       - name: Check Cloudflare Forge pipeline
         run: |
