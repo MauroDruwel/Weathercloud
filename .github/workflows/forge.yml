@@ -71,7 +71,7 @@ jobs:
               <script
                 id=\"api-reference\"
                 type=\"application/json\"
-                data-configuration='{\"theme\":\"saturn\",\"darkMode\":true,\"layout\":\"modern\",\"showSidebar\":true,\"searchHotKey\":\"k\"}'>
+                data-configuration='{\"theme\":\"saturn\",\"darkMode\":true,\"layout\":\"modern\",\"showSidebar\":true,\"searchHotKey\":\"k\",\"defaultHttpClient\":{\"targetKey\":\"python\",\"clientKey\":\"requests\"}}'>
           \${specJson}
               </script>
               <script src=\"https://cdn.jsdelivr.net/npm/@scalar/api-reference\"></script>

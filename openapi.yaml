@@ -27,12 +27,33 @@ info:
     ### Import into Postman / API tools
     **File → Import** → upload `openapi.yaml` (or paste the raw URL of this file).
 
-    ---
-
     > **Home Assistant** — most useful endpoints:
     > - `GET /device/values/{deviceId}` — live sensor readings
     > - `GET /device/stats` — current + daily/monthly/yearly min/max
     > - `GET /device/info/{deviceId}` — station metadata
+
+    ---
+
+    ### Python Client Library
+    This API is natively wrapped by the [`weathercloud`](https://pypi.org/project/weathercloud/) Python package:
+    ```bash
+    pip install weathercloud
+    ```
+    ```python
+    from weathercloud import WeathercloudClient
+
+    with WeathercloudClient() as client:
+        conditions = client.get_current_conditions("5726468552")
+        print(f"Temperature: {conditions.temperature}°C, Humidity: {conditions.humidity}%")
+    ```
+
+    ---
+
+    ### Cloudflare Forge Surface Tooling (CLI & MCP)
+    This specification powers the **Cloudflare Forge** surface tooling architecture:
+    - **CLI Generation**: OpenAPI operations are automatically transformed into native command-line interfaces.
+    - **Model Context Protocol (MCP)**: Operations map into standardized MCP tool definitions for AI agents (Claude, Cursor, Antigravity) to query live station readings directly.
+    - **Typed SDK Generation**: Multi-language SDK generation powered by Fern.
   version: "1.0.0"
   contact:
     name: Mauro Druwel
@@ -71,6 +92,15 @@ paths:
       x-fern-sdk-group-name: auth
       x-fern-sdk-method-name: login
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            # Login is optional; required only for private indoor sensors
+            client = WeathercloudClient(username="my_user", password="my_password")
+            client.login()
       tags: [Authentication]
       summary: User login / authentication
       description: |
@@ -114,6 +144,15 @@ paths:
       x-fern-sdk-group-name: device.live
       x-fern-sdk-method-name: getValues
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                conditions = client.get_current_conditions("5726468552")
+                print(f"Temperature: {conditions.temperature}°C, Humidity: {conditions.humidity}%")
       tags: [Device (live)]
       summary: Current sensor readings ⭐
       description: |
@@ -153,6 +192,16 @@ paths:
       x-fern-sdk-group-name: device.live
       x-fern-sdk-method-name: getStats
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                stats = client.get_device_stats("5726468552")
+                print("Max temp today:", stats.get("temp_day_max"))
+                print("Total rain this month:", stats.get("rain_month_total"))
       tags: [Device (live)]
       summary: Current + min/max statistics ⭐
       description: |
@@ -180,6 +229,18 @@ paths:
       x-fern-sdk-group-name: device.live
       x-fern-sdk-method-name: getInfo
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                info = client.get_station_info("5726468552")
+                print(f"Name: {info.name}")
+                print(f"City: {info.city}")
+                print(f"Coordinates: ({info.latitude}, {info.longitude})")
+                print(f"Status: {info.status}")
       tags: [Device (live)]
       summary: Station metadata ⭐
       description: Station name, location, elevation, equipment info.
@@ -200,6 +261,15 @@ paths:
       x-fern-sdk-group-name: device.live
       x-fern-sdk-method-name: getWindRose
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                wind = client.get_wind_rose("5726468552")
+                print("Wind rose distribution:", wind)
       tags: [Device (live)]
       summary: Wind rose data
       description: Wind direction distribution data for the wind rose chart.
@@ -225,6 +295,15 @@ paths:
       x-fern-sdk-group-name: device.live
       x-fern-sdk-method-name: getUpdateStatus
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                status = client.get_update_status("5726468552")
+                print(f"Seconds since update: {status.get('update')}")
       tags: [Device (live)]
       summary: Last update time + status
       description: |
@@ -271,6 +350,16 @@ paths:
       x-fern-sdk-group-name: device.live
       x-fern-sdk-method-name: getOwnerProfile
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                profile = client.get_owner_profile("5726468552")
+                print(f"Observer: {profile.get('name')}")
+                print(f"Model: {profile.get('model')}")
       tags: [Device (live)]
       summary: Station owner profile
       description: |
@@ -313,6 +402,19 @@ paths:
       x-fern-sdk-group-name: device.history
       x-fern-sdk-method-name: getEvolution
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import VariableCode, WeathercloudClient
+
+            with WeathercloudClient() as client:
+                history = client.get_evolution(
+                    "5726468552",
+                    variable=VariableCode.TEMPERATURE,
+                    period="week",
+                )
+                print("Evolution data:", history)
       tags: [Device (history)]
       summary: Time-series history for a variable
       description: |
@@ -370,6 +472,15 @@ paths:
       x-fern-sdk-group-name: forecast
       x-fern-sdk-method-name: getDaily
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                forecast = client.get_forecast("5726468552")
+                print("6-day forecast:", forecast)
       tags: [Forecast]
       summary: Daily weather forecast
       parameters:
@@ -408,6 +519,15 @@ paths:
       x-fern-sdk-group-name: map
       x-fern-sdk-method-name: getDevices
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                devices = client._get_dict("/map/devices")
+                print(f"Loaded {len(devices)} active map stations")
       tags: [Map]
       summary: Stations on map within area
       description: |
@@ -443,6 +563,15 @@ paths:
       x-fern-sdk-group-name: map
       x-fern-sdk-method-name: getBackgroundDevices
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                bg_devices = client._get_dict("/map/bgdevices")
+                print(f"Loaded {len(bg_devices)} background stations")
       tags: [Map]
       summary: Background/inactive stations on map
       parameters:
@@ -469,6 +598,15 @@ paths:
       x-fern-sdk-group-name: map
       x-fern-sdk-method-name: getMetars
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                metars = client._get_dict("/map/metars")
+                print(f"Loaded {len(metars)} METAR airport stations")
       tags: [Map]
       summary: METAR airport observations on map
       parameters:
@@ -501,6 +639,16 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getNearby
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                nearby = client.get_nearby_stations(lat=50.8503, lon=4.3517, distance_km=10)
+                devices = nearby.get("devices", [])
+                print(f"Found {len(devices)} nearby stations")
       tags: [Pages]
       summary: Stations near coordinates ⭐
       description: |
@@ -541,6 +689,15 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getPopular
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                popular = client._get_dict("/page/popular/country/all/period/month")
+                print("Popular stations:", popular)
       tags: [Pages]
       summary: Popular stations by country
       parameters:
@@ -572,6 +729,15 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getNewest
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                newest = client._get_dict("/page/newest/country/all")
+                print("Newest stations:", newest)
       tags: [Pages]
       summary: Newest stations by country
       parameters:
@@ -596,6 +762,15 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getMostFollowed
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                followed = client._get_dict("/page/followers/country/all")
+                print("Most followed stations:", followed)
       tags: [Pages]
       summary: Most followed stations by country
       parameters:
@@ -620,6 +795,15 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getLastViews
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                lastviews = client._get_dict("/page/lastviews")
+                print("Recently viewed stations:", lastviews)
       tags: [Pages]
       summary: Recently viewed stations
       parameters:
@@ -638,6 +822,17 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getOwn
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            # Requires authentication
+            client = WeathercloudClient(username="my_user", password="my_password")
+            client.login()
+            own_stations = client._get_dict("/page/own")
+            print("Owned stations:", own_stations)
       tags: [Pages]
       summary: Own stations (requires login)
       parameters:
@@ -656,6 +851,16 @@ paths:
       x-fern-sdk-group-name: metar
       x-fern-sdk-method-name: getValues
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                # Airport ICAO codes automatically use METAR values
+                metar = client.get_current_conditions("EBBR")
+                print(f"Brussels Airport Temperature: {metar.temperature}°C")
       tags: [Miscellaneous]
       summary: METAR station — current readings
       description: |
@@ -696,6 +901,16 @@ paths:
       x-fern-sdk-group-name: stations
       x-fern-sdk-method-name: getStationPage
       x-fern-availability: generally-available
+      x-codeSamples:
+        - lang: python
+          label: Python (weathercloud)
+          source: |
+            from weathercloud import WeathercloudClient
+
+            with WeathercloudClient() as client:
+                name = client.get_station_name("5726468552")
+                info = client.get_station_info("5726468552", scrape_name=True, fetch_location=True)
+                print(f"{name} located at ({info.latitude}, {info.longitude})")
       tags: [Miscellaneous]
       summary: Station HTML page (scrape station name)
       description: |

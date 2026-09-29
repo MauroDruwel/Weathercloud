@@ -165,12 +165,106 @@ app.weathercloud.net/d5726468552  →  device_id = "5726468552"
 METAR (airport) stations use ICAO codes (`EBBR`, `EGLL`, …) and work on most
 `device/*` endpoints — just swap the prefix to `metar/*`.
 
+## ⚡ Cloudflare Forge & Surface Tooling (CLI & MCP)
+
+This project uses **[Cloudflare Forge](https://github.com/cloudflare/forge)** to power a schema-first code generation and surface tooling architecture. The canonical [`openapi.yaml`](./openapi.yaml) specification serves as the single source of truth for the entire API ecosystem.
+
+Instead of handwriting boilerplate adapters, Cloudflare Forge automatically derives typed SDKs, CLI commands, and Model Context Protocol (MCP) tools directly from the OpenAPI schema and its extensions (`x-fern-*`, `x-forge-*`, `x-codeSamples`).
+
+```
+                  +--------------------------------+
+                  |  openapi.yaml (Single Source)  |
+                  +---------------+----------------+
+                                  |
+                   Cloudflare Forge Schema Engine
+                                  |
+        +-------------------------+-------------------------+
+        |                         |                         |
+        v                         v                         v
++---------------+         +---------------+         +---------------+
+|  Python SDK   |         |  Auto-Gen CLI |         | Auto-Gen MCP  |
+| (weathercloud)|         |  (Forge CLI)  |         | (AI Agents)   |
++---------------+         +---------------+         +---------------+
+        |                         |                         |
+        +-------------------------+-------------------------+
+                                  |
+                                  v
+                  +--------------------------------+
+                  | Scalar Interactive API Portal  |
+                  | weathercloud-api.maurodruwel.be|
+                  +--------------------------------+
+```
+
+### 📚 Interactive API Documentation (Scalar)
+
+The complete interactive API reference is deployed to Cloudflare Pages at **[weathercloud-api.maurodruwel.be](https://weathercloud-api.maurodruwel.be)** (branch preview: [feat-forge-pipeline.weathercloud-api.pages.dev](https://feat-forge-pipeline.weathercloud-api.pages.dev)).
+
+- **Powered by Scalar**: Clean, modern saturn-themed API explorer with instant search, dark mode, and zero-runtime dependency static build.
+- **Native Python Library Snippets**: Every operation includes dedicated `x-codeSamples` demonstrating usage with the `weathercloud` Python client library alongside standard HTTP requests.
+
+### 💻 Automated CLI Generation
+
+Cloudflare Forge's CLI generator transforms OpenAPI operations into native command-line commands without any custom CLI scripting:
+
+```bash
+# Query live station sensor readings
+weathercloud device values 5726468552
+
+# Fetch station metadata, status, and coordinates
+weathercloud device info 5726468552
+
+# Query daily, monthly, and yearly min/max statistics
+weathercloud device stats --code 5726468552
+
+# Fetch time-series historical evolution data
+weathercloud device evolution --device 5726468552 --variable 101 --period week
+
+# Search for nearby stations by GPS coordinates
+weathercloud stations nearby --lat 50.8503 --lon 4.3517 --distance 10
+
+# Fetch 6-day weather forecast
+weathercloud forecast daily --id 5726468552
+```
+
+Every command, flag, help description, and argument validator is automatically synchronized with `openapi.yaml`.
+
+### 🤖 Model Context Protocol (MCP) for AI Agents
+
+Cloudflare Forge automatically compiles the OpenAPI specification into **Model Context Protocol (MCP)** tool definitions, enabling AI assistants (such as Claude Desktop, Cursor, and Antigravity) to query live weather stations and analyze sensor readings directly:
+
+- **Zero Handwritten Glue Code**: Operations (`getDeviceValues`, `getDeviceInfo`, `getDeviceStats`, `getForecast`, `getNearbyStations`) map directly to MCP tools with typed JSON schemas.
+- **Autonomous Station Discovery**: AI agents can discover nearby stations, inspect historical trends, and monitor real-time sensor updates autonomously.
+
+#### Connecting to Claude Desktop / Cursor
+
+Add the Weathercloud MCP server definition to your `claude_desktop_config.json` or Cursor MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "weathercloud": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cloudflare/forge-mcp",
+        "--spec",
+        "https://raw.githubusercontent.com/MauroDruwel/Weathercloud/main/openapi.yaml"
+      ]
+    }
+  }
+}
+```
+
+Once connected, your AI assistant can directly answer queries such as:
+- *"What is the current temperature and wind speed at Weathercloud station 5726468552?"*
+- *"Find all Weathercloud stations within 10 km of Brussels and compare their barometric pressures."*
+
 ## 💡 Notes
 
 - 🔓 No authentication required for public endpoints (recommended). Supply credentials only if you need to fetch private inside sensors of a station you own.
 - ⏱️ Poll at most every 10 minutes — that's how often free stations update.
-- 🧭 Based on the [reverse-engineered OpenAPI spec](./openapi.yaml) in this repo.
-- ⚡ **Cloudflare Forge Pipeline**: Automated OpenAPI validation and SDK/CLI generation via [`.github/workflows/forge.yml`](./.github/workflows/forge.yml).
+- 🧭 Single source of truth: [`openapi.yaml`](./openapi.yaml).
+- ⚡ Cloudflare Forge pipeline: [`.github/workflows/forge.yml`](./.github/workflows/forge.yml).
 
 ## 🛠️ Development
 
@@ -186,14 +280,9 @@ pytest            # tests
 python -m build   # build sdist + wheel
 ```
 
-CI runs the linter, type checker, and the test matrix (Python 3.10–3.13) on every
-push and pull request.
-
-### API Documentation & Explorer
-
-The API specification is formally defined in [`openapi.yaml`](./openapi.yaml) using **Cloudflare Forge** specification extensions (`x-fern-*` & `x-forge-*`).
-Automated API documentation is generated via the Cloudflare Forge pipeline and published to **[weathercloud-api.maurodruwel.be](https://weathercloud-api.maurodruwel.be)**.
+CI runs the linter, type checker, and the test matrix (Python 3.10–3.13) on every push and pull request.
 
 ## 📄 License
 
 [MIT](LICENSE)
+
