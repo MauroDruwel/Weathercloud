@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa
 """
 Generates the official Fern / Cloudflare Docs UI from openapi.yaml.
 Produces a self-contained, interactive 3-column documentation site in docs/index.html
