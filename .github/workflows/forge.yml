@@ -37,15 +37,15 @@ jobs:
 
       - name: Auto-generate API documentation
         run: |
-          mkdir -p dist
-          npx --yes @redocly/cli build-docs openapi.yaml --output dist/index.html
-          echo "✓ Generated standalone API documentation in dist/index.html"
+          mkdir -p docs
+          npx --yes @redocly/cli build-docs openapi.yaml --output docs/index.html
+          echo "✓ Generated standalone API documentation in docs/index.html"
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-documentation
-          path: dist/index.html
+          path: docs/index.html
           retention-days: 14
 
       - name: Check Cloudflare Forge pipeline
