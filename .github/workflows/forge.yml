@@ -7,10 +7,14 @@ on:
       - main
     paths:
       - 'openapi.yaml'
+      - 'fern/**'
+      - 'scripts/generate_docs.py'
       - '.github/workflows/forge.yml'
   pull_request:
     paths:
       - 'openapi.yaml'
+      - 'fern/**'
+      - 'scripts/generate_docs.py'
       - '.github/workflows/forge.yml'
   workflow_dispatch:
 
@@ -19,7 +23,7 @@ permissions:
 
 jobs:
   validate_and_generate:
-    name: Validate OpenAPI & Generate Docs
+    name: Validate OpenAPI, Fern & Generate Docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,66 +34,25 @@ jobs:
         with:
           node-version: 20
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Validate OpenAPI specification
         run: |
           npx --yes @redocly/cli lint openapi.yaml --skip-rule operation-4xx-response
           echo "✓ openapi.yaml is valid and conforms to Forge extensions"
 
-      - name: Auto-generate Cloudflare-styled API documentation
+      - name: Validate Fern definition
         run: |
-          mkdir -p docs
-          python3 -c "
-          import json
-          with open('openapi.yaml', 'r') as f:
-              spec = f.read()
-          html = f'''<!doctype html>
-          <html lang=\"en\">
-            <head>
-              <meta charset=\"utf-8\" />
-              <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-              <title>Weathercloud API Reference</title>
-              <link rel=\"icon\" type=\"image/svg+xml\" href=\"https://app.weathercloud.net/favicon.ico\" />
-              <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />
-              <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />
-              <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap\" rel=\"stylesheet\" />
-              <style>
-                :root {{
-                  --scalar-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                  --scalar-font-code: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
-                  --scalar-color-accent: #f6821f;
-                  --scalar-background-1: #0f172a;
-                  --scalar-background-2: #1e293b;
-                  --scalar-background-3: #334155;
-                  --scalar-border-color: #334155;
-                }}
-                body {{
-                  margin: 0;
-                  background-color: #0f172a;
-                }}
-              </style>
-            </head>
-            <body>
-              <script
-                id=\"api-reference\"
-                type=\"application/yaml\"
-                data-configuration='{json.dumps({
-                  \"theme\": \"deepSpace\",
-                  \"darkMode\": True,
-                  \"layout\": \"modern\",
-                  \"showSidebar\": True,
-                  \"searchHotKey\": \"k\",
-                  \"defaultHttpClient\": {
-                    \"targetKey\": \"python\",
-                    \"clientKey\": \"requests\"
-                  }
-                })}'>{spec}</script>
-              <script src=\"https://cdn.jsdelivr.net/npm/@scalar/api-reference\"></script>
-            </body>
-          </html>'''
-          with open('docs/index.html', 'w') as f:
-              f.write(html)
-          "
-          echo "✓ Generated modern Cloudflare-styled API documentation in docs/index.html"
+          npx --yes fern-api check
+          echo "✓ Fern workspace and docs configuration passed verification"
+
+      - name: Generate Fern / Cloudflare Docs UI
+        run: |
+          python3 scripts/generate_docs.py
+          echo "✓ Generated standalone Fern / Cloudflare Docs UI in docs/index.html"
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
@@ -97,10 +60,3 @@ jobs:
           name: api-documentation
           path: docs/index.html
           retention-days: 14
-
-      - name: Check Cloudflare Forge pipeline
-        run: |
-          echo "Setting up Cloudflare Forge SDK generation environment..."
-          npm install -g pnpm
-          pnpm add -D @cloudflare/forge || true
-          echo "✓ Cloudflare Forge ready for automated SDK and CLI generation"

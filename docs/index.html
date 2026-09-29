@@ -1,1198 +1,2187 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Weathercloud API Reference</title>
-    <link rel="icon" type="image/svg+xml" href="https://app.weathercloud.net/favicon.ico" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <style>
-      :root {
-        --scalar-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        --scalar-font-code: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
-        --scalar-color-accent: #f6821f;
-        --scalar-background-1: #0f172a;
-        --scalar-background-2: #1e293b;
-        --scalar-background-3: #334155;
-        --scalar-border-color: #334155;
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weathercloud Unofficial API — Reference</title>
+  <link rel="icon" type="image/svg+xml" href="https://app.weathercloud.net/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-sidebar: #0f172a;
+      --bg-card: #131b2e;
+      --bg-code: #0a0e17;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --accent: #f6821f;
+      --accent-muted: rgba(246, 130, 31, 0.15);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --badge-get-bg: rgba(16, 185, 129, 0.15);
+      --badge-get-text: #34d399;
+      --badge-post-bg: rgba(59, 130, 246, 0.15);
+      --badge-post-text: #60a5fa;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    /* Top Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      z-index: 50;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+      text-decoration: none;
+    }
+    .logo-badge svg {
+      color: var(--accent);
+    }
+    .version-tag {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: var(--accent-muted);
+      color: var(--accent);
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+    .fern-pill {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .header-search {
+      position: relative;
+      width: 320px;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 2rem 0.45rem 2.2rem;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: var(--font);
+      outline: none;
+      transition: all 0.15s;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-muted);
+    }
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+    .search-kbd {
+      position: absolute;
+      right: 0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .header-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: color 0.15s;
+    }
+    .header-link:hover {
+      color: #fff;
+    }
+
+    /* Main Container */
+    .app-container {
+      display: flex;
+      margin-top: 56px;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* Sidebar Navigation */
+    aside.sidebar {
+      width: 290px;
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      height: calc(100vh - 56px);
+      position: sticky;
+      top: 56px;
+      overflow-y: auto;
+      padding: 1rem 0;
+    }
+    .sidebar-group {
+      margin-bottom: 1.25rem;
+    }
+    .group-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      padding: 0.25rem 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.4rem 1.25rem;
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+      cursor: pointer;
+    }
+    .nav-item:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .nav-item.active {
+      color: var(--accent);
+      background: var(--accent-muted);
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+    .method-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+    }
+    .method-badge.get {
+      background: var(--badge-get-bg);
+      color: var(--badge-get-text);
+    }
+    .method-badge.post {
+      background: var(--badge-post-bg);
+      color: var(--badge-post-text);
+    }
+
+    /* Content Area: Center + Right */
+    main.content {
+      flex: 1;
+      display: flex;
+      overflow-x: hidden;
+    }
+    .doc-pane {
+      flex: 1;
+      max-width: 680px;
+      padding: 2.5rem;
+    }
+    .code-pane {
+      width: 480px;
+      flex-shrink: 0;
+      padding: 2.5rem 1.5rem 2.5rem 0;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+
+    /* Operation Header */
+    .op-header {
+      margin-bottom: 2rem;
+    }
+    .op-meta-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .sdk-group-pill {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(246, 130, 31, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(246, 130, 31, 0.2);
+    }
+    .avail-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .op-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      color: #fff;
+    }
+    .endpoint-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+    .endpoint-pill .path {
+      color: #e2e8f0;
+    }
+    .op-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    /* Section Headings */
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin: 1.75rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Parameters Table */
+    .params-table {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      background: var(--bg-card);
+    }
+    .param-row {
+      display: flex;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+      gap: 1rem;
+    }
+    .param-row:last-child {
+      border-bottom: none;
+    }
+    .param-name-col {
+      width: 160px;
+      flex-shrink: 0;
+    }
+    .param-name {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+    .param-type {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+    .param-req {
+      color: #ef4444;
+      font-size: 0.7rem;
+      margin-left: 2px;
+    }
+    .param-desc-col {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Code Console Box */
+    .console-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    .console-header {
+      background: rgba(15, 23, 42, 0.6);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.75rem;
+    }
+    .lang-tabs {
+      display: flex;
+      gap: 0.25rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .tab-btn:hover {
+      color: #fff;
+    }
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--accent);
+    }
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+    .copy-btn:hover {
+      color: #fff;
+    }
+    .code-content {
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      background: var(--bg-code);
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.6;
+    }
+
+    /* Response Preview */
+    .response-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: #34d399;
+    }
+    .response-status-badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    /* Empty state / hidden */
+    .op-section {
+      display: none;
+    }
+    .op-section.active {
+      display: block;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="#" class="logo-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+        </svg>
+        <span>Weathercloud Unofficial API</span>
+      </a>
+      <span class="version-tag">v1.0.0</span>
+      <span class="fern-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        Forge & Fern Docs
+      </span>
+    </div>
+
+    <div class="header-search">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search endpoints... (Press /)" />
+      <span class="search-kbd">/</span>
+    </div>
+
+    <div class="header-right">
+      <a href="https://github.com/MauroDruwel/Weathercloud" target="_blank" class="header-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/></svg>
+        GitHub
+      </a>
+      <a href="./openapi.yaml" target="_blank" class="header-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        OpenAPI Spec
+      </a>
+    </div>
+  </header>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-group">
+        <div class="group-title">Authentication</div>
+        <a class="nav-item" data-id="login" onclick="showEndpoint('login')">
+          <span class="method-badge post">POST</span>
+          <span>User login / authentication</span>
+        </a>
+      </div>
+      <div class="sidebar-group">
+        <div class="group-title">Device (live)</div>
+        <a class="nav-item" data-id="getDeviceValues" onclick="showEndpoint('getDeviceValues')">
+          <span class="method-badge get">GET</span>
+          <span>Current sensor readings ⭐</span>
+        </a>
+        <a class="nav-item" data-id="getDeviceStats" onclick="showEndpoint('getDeviceStats')">
+          <span class="method-badge get">GET</span>
+          <span>Current + min/max statistics ⭐</span>
+        </a>
+        <a class="nav-item" data-id="getDeviceInfo" onclick="showEndpoint('getDeviceInfo')">
+          <span class="method-badge get">GET</span>
+          <span>Station metadata ⭐</span>
+        </a>
+        <a class="nav-item" data-id="getWindRose" onclick="showEndpoint('getWindRose')">
+          <span class="method-badge get">GET</span>
+          <span>Wind rose data</span>
+        </a>
+        <a class="nav-item" data-id="getUpdateStatus" onclick="showEndpoint('getUpdateStatus')">
+          <span class="method-badge post">POST</span>
+          <span>Last update time + status</span>
+        </a>
+        <a class="nav-item" data-id="getOwnerProfile" onclick="showEndpoint('getOwnerProfile')">
+          <span class="method-badge post">POST</span>
+          <span>Station owner profile</span>
+        </a>
+      </div>
+      <div class="sidebar-group">
+        <div class="group-title">Device (history)</div>
+        <a class="nav-item" data-id="getEvolution" onclick="showEndpoint('getEvolution')">
+          <span class="method-badge post">POST</span>
+          <span>Time-series history for a variable</span>
+        </a>
+      </div>
+      <div class="sidebar-group">
+        <div class="group-title">Forecast</div>
+        <a class="nav-item" data-id="getForecast" onclick="showEndpoint('getForecast')">
+          <span class="method-badge get">GET</span>
+          <span>Daily weather forecast</span>
+        </a>
+      </div>
+      <div class="sidebar-group">
+        <div class="group-title">Map</div>
+        <a class="nav-item" data-id="getMapDevices" onclick="showEndpoint('getMapDevices')">
+          <span class="method-badge post">POST</span>
+          <span>Stations on map within area</span>
+        </a>
+        <a class="nav-item" data-id="getMapBgDevices" onclick="showEndpoint('getMapBgDevices')">
+          <span class="method-badge post">POST</span>
+          <span>Background/inactive stations on map</span>
+        </a>
+        <a class="nav-item" data-id="getMapMetars" onclick="showEndpoint('getMapMetars')">
+          <span class="method-badge post">POST</span>
+          <span>METAR airport observations on map</span>
+        </a>
+      </div>
+      <div class="sidebar-group">
+        <div class="group-title">Pages</div>
+        <a class="nav-item" data-id="getNearbyStations" onclick="showEndpoint('getNearbyStations')">
+          <span class="method-badge get">GET</span>
+          <span>Stations near coordinates ⭐</span>
+        </a>
+        <a class="nav-item" data-id="getPopularStations" onclick="showEndpoint('getPopularStations')">
+          <span class="method-badge get">GET</span>
+          <span>Popular stations by country</span>
+        </a>
+        <a class="nav-item" data-id="getNewestStations" onclick="showEndpoint('getNewestStations')">
+          <span class="method-badge get">GET</span>
+          <span>Newest stations by country</span>
+        </a>
+        <a class="nav-item" data-id="getMostFollowedStations" onclick="showEndpoint('getMostFollowedStations')">
+          <span class="method-badge get">GET</span>
+          <span>Most followed stations by country</span>
+        </a>
+        <a class="nav-item" data-id="getLastViewedStations" onclick="showEndpoint('getLastViewedStations')">
+          <span class="method-badge get">GET</span>
+          <span>Recently viewed stations</span>
+        </a>
+        <a class="nav-item" data-id="getOwnStations" onclick="showEndpoint('getOwnStations')">
+          <span class="method-badge get">GET</span>
+          <span>Own stations (requires login)</span>
+        </a>
+      </div>
+      <div class="sidebar-group">
+        <div class="group-title">Miscellaneous</div>
+        <a class="nav-item" data-id="getMetarValues" onclick="showEndpoint('getMetarValues')">
+          <span class="method-badge get">GET</span>
+          <span>METAR station — current readings</span>
+        </a>
+        <a class="nav-item" data-id="getStationPage" onclick="showEndpoint('getStationPage')">
+          <span class="method-badge get">GET</span>
+          <span>Station HTML page (scrape station name)</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="content">
+      <!-- Operation: login -->
+      <section class="op-section active" id="sec_login">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">auth.login()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">User login / authentication</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/signin</span>
+              </div>
+              <p class="op-desc">Authenticates a user session to allow viewing private indoor sensors (`tempin`, `humin`, `heatin`) for the user's station.<br/>This endpoint expects form urlencoded data and returns a `302 Found` redirect on successful login.<br/></p>
+            </div>
+
+            
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('login', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('login', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('login', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('login')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_login">curl -X POST 'https://app.weathercloud.net/signin' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('login')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_login">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getDeviceValues -->
+      <section class="op-section " id="sec_getDeviceValues">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.live.getValues()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Current sensor readings ⭐</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/device/values/{deviceId}</span>
+              </div>
+              <p class="op-desc">Returns the latest sensor values for a device. **No CSRF token needed.**<br/>This is the primary endpoint for a Home Assistant sensor integration.<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">deviceId<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>5726468552</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getDeviceValues', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getDeviceValues', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getDeviceValues', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getDeviceValues')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getDeviceValues">curl -X GET 'https://app.weathercloud.net/device/values/5726468552' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getDeviceValues')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getDeviceValues">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getDeviceStats -->
+      <section class="op-section " id="sec_getDeviceStats">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.live.getStats()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Current + min/max statistics ⭐</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/device/stats</span>
+              </div>
+              <p class="op-desc">Returns current values plus day/month/year min and max for all sensors.<br/>Each value is a `[unix_timestamp, value]` tuple.<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">code<span class="param-req">*</span></div>
+                    <div class="param-type">string • query</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>5726468552</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getDeviceStats', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getDeviceStats', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getDeviceStats', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getDeviceStats')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getDeviceStats">curl -X GET 'https://app.weathercloud.net/device/stats' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getDeviceStats')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getDeviceStats">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getDeviceInfo -->
+      <section class="op-section " id="sec_getDeviceInfo">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.live.getInfo()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Station metadata ⭐</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/device/info/{deviceId}</span>
+              </div>
+              <p class="op-desc">Station name, location, elevation, equipment info.</p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">deviceId<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>5726468552</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getDeviceInfo', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getDeviceInfo', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getDeviceInfo', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getDeviceInfo')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getDeviceInfo">curl -X GET 'https://app.weathercloud.net/device/info/5726468552' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getDeviceInfo')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getDeviceInfo">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getWindRose -->
+      <section class="op-section " id="sec_getWindRose">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.live.getWindRose()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Wind rose data</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/device/wind</span>
+              </div>
+              <p class="op-desc">Wind direction distribution data for the wind rose chart.</p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">code<span class="param-req">*</span></div>
+                    <div class="param-type">string • query</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>5726468552</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getWindRose', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getWindRose', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getWindRose', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getWindRose')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getWindRose">curl -X GET 'https://app.weathercloud.net/device/wind' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getWindRose')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getWindRose">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getUpdateStatus -->
+      <section class="op-section " id="sec_getUpdateStatus">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.live.getUpdateStatus()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Last update time + status</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/device/ajaxupdatedate</span>
+              </div>
+              <p class="op-desc">Returns seconds since last update and device online status.<br/><br/>> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getUpdateStatus', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getUpdateStatus', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getUpdateStatus', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getUpdateStatus')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getUpdateStatus">curl -X POST 'https://app.weathercloud.net/device/ajaxupdatedate' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getUpdateStatus')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getUpdateStatus">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getOwnerProfile -->
+      <section class="op-section " id="sec_getOwnerProfile">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.live.getOwnerProfile()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Station owner profile</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/device/ajaxprofile</span>
+              </div>
+              <p class="op-desc">Returns observer name, follower count, and device brand/model.<br/><br/>> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getOwnerProfile', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getOwnerProfile', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getOwnerProfile', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getOwnerProfile')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getOwnerProfile">curl -X POST 'https://app.weathercloud.net/device/ajaxprofile' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getOwnerProfile')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getOwnerProfile">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getEvolution -->
+      <section class="op-section " id="sec_getEvolution">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">device.history.getEvolution()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Time-series history for a variable</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/device/evolution</span>
+              </div>
+              <p class="op-desc">Returns hourly aggregated history for a given variable and period.<br/><br/>> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.<br/><br/>**Variable codes:**<br/>| Code | Sensor |<br/>|------|--------|<br/>| 101  | Temperature (°C) |<br/>| 201  | Humidity (%) |<br/>| 541  | Dew point (°C) |<br/>| 641  | Barometric pressure (hPa) |<br/>| 701  | Wind speed (m/s) |<br/>| 6001 | Wind direction (°) |<br/>| 6501 | Wind gust / high speed (m/s) |<br/>| 801  | Rain (mm) |<br/>| 811  | Rain rate (mm/h) |<br/>| 1001 | Solar radiation (W/m²) |<br/>| 1101 | UV index |<br/><br/>**Period values:** `day`, `week`, `month`, `year`<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getEvolution', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getEvolution', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getEvolution', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getEvolution')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getEvolution">curl -X POST 'https://app.weathercloud.net/device/evolution' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getEvolution')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getEvolution">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getForecast -->
+      <section class="op-section " id="sec_getForecast">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">forecast.getDaily()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Daily weather forecast</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/forecast/daily</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">id<span class="param-req">*</span></div>
+                    <div class="param-type">string • query</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>5726468552</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getForecast', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getForecast', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getForecast', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getForecast')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getForecast">curl -X GET 'https://app.weathercloud.net/forecast/daily' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getForecast')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getForecast">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getMapDevices -->
+      <section class="op-section " id="sec_getMapDevices">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">map.getDevices()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Stations on map within area</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/map/devices</span>
+              </div>
+              <p class="op-desc">Returns stations visible on the map for a given location bounding box.<br/><br/>> ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getMapDevices', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getMapDevices', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getMapDevices', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getMapDevices')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getMapDevices">curl -X POST 'https://app.weathercloud.net/map/devices' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getMapDevices')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getMapDevices">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getMapBgDevices -->
+      <section class="op-section " id="sec_getMapBgDevices">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">map.getBackgroundDevices()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Background/inactive stations on map</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/map/bgdevices</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getMapBgDevices', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getMapBgDevices', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getMapBgDevices', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getMapBgDevices')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getMapBgDevices">curl -X POST 'https://app.weathercloud.net/map/bgdevices' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getMapBgDevices')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getMapBgDevices">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getMapMetars -->
+      <section class="op-section " id="sec_getMapMetars">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">map.getMetars()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">METAR airport observations on map</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge post">POST</span>
+                <span class="path">/map/metars</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getMapMetars', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getMapMetars', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getMapMetars', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getMapMetars')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getMapMetars">curl -X POST 'https://app.weathercloud.net/map/metars' \ \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \ \
+  -d 'variable=101&period=week'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getMapMetars')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getMapMetars">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getNearbyStations -->
+      <section class="op-section " id="sec_getNearbyStations">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getNearby()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Stations near coordinates ⭐</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/page/coordinates/latitude/{lat}/longitude/{lon}/distance/{km}</span>
+              </div>
+              <p class="op-desc">Returns nearby stations as JSON (despite `text/html` content-type header).<br/>All `page/*` endpoints return `PageDevice` objects that include the **station name**.<br/>Values are scaled integers — divide by 10 (e.g. `temp: 281` = 28.1°C).<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">lat<span class="param-req">*</span></div>
+                    <div class="param-type">number • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>50.9475</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">lon<span class="param-req">*</span></div>
+                    <div class="param-type">number • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>3.1205</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">km<span class="param-req">*</span></div>
+                    <div class="param-type">integer • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>5</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getNearbyStations', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getNearbyStations', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getNearbyStations', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getNearbyStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getNearbyStations">curl -X GET 'https://app.weathercloud.net/page/coordinates/latitude/50.9475/longitude/3.1205/distance/5' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getNearbyStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getNearbyStations">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getPopularStations -->
+      <section class="op-section " id="sec_getPopularStations">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getPopular()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Popular stations by country</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/page/popular/country/{country}/period/{period}</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">country<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>BE</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">period<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>day</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getPopularStations', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getPopularStations', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getPopularStations', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getPopularStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getPopularStations">curl -X GET 'https://app.weathercloud.net/page/popular/country/BE/period/day' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getPopularStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getPopularStations">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getNewestStations -->
+      <section class="op-section " id="sec_getNewestStations">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getNewest()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Newest stations by country</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/page/newest/country/{country}</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">country<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>BE</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getNewestStations', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getNewestStations', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getNewestStations', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getNewestStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getNewestStations">curl -X GET 'https://app.weathercloud.net/page/newest/country/BE' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getNewestStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getNewestStations">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getMostFollowedStations -->
+      <section class="op-section " id="sec_getMostFollowedStations">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getMostFollowed()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Most followed stations by country</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/page/followers/country/{country}</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">country<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>BE</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getMostFollowedStations', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getMostFollowedStations', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getMostFollowedStations', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getMostFollowedStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getMostFollowedStations">curl -X GET 'https://app.weathercloud.net/page/followers/country/BE' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getMostFollowedStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getMostFollowedStations">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getLastViewedStations -->
+      <section class="op-section " id="sec_getLastViewedStations">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getLastViews()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Recently viewed stations</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/page/lastviews</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getLastViewedStations', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getLastViewedStations', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getLastViewedStations', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getLastViewedStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getLastViewedStations">curl -X GET 'https://app.weathercloud.net/page/lastviews' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getLastViewedStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getLastViewedStations">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getOwnStations -->
+      <section class="op-section " id="sec_getOwnStations">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getOwn()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Own stations (requires login)</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/page/own</span>
+              </div>
+              <p class="op-desc"></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getOwnStations', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getOwnStations', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getOwnStations', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getOwnStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getOwnStations">curl -X GET 'https://app.weathercloud.net/page/own' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getOwnStations')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getOwnStations">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getMetarValues -->
+      <section class="op-section " id="sec_getMetarValues">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">metar.getValues()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">METAR station — current readings</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/metar/values/{deviceId}</span>
+              </div>
+              <p class="op-desc">Most `device/*` routes work identically for METAR (airport) stations by replacing the `device` prefix with `metar`.<br/><br/>METAR station IDs are **ICAO codes** (4 letters), e.g. `EBBR` for Brussels Airport.<br/><br/>**Supported `metar/*` routes (same request/response as their `device/*` counterparts):**<br/>- `GET /metar/values/{icao}` — current readings<br/>- `GET /metar/stats?code={icao}` — statistics<br/>- `GET /metar/wind?code={icao}` — wind rose<br/>- `GET /metar/info/{icao}` — station metadata<br/>- `POST /metar/ajaxupdatedate` — last update time<br/>- `POST /metar/ajaxprofile` — station profile<br/>- `POST /metar/evolution` — time-series history<br/><br/>> **Not supported for METAR:** `/device/ajaxdevicestats`<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">deviceId<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col">ICAO airport code (Example: <code>EBBR</code>)</div>
+                </div><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">X-Requested-With</div>
+                    <div class="param-type">string • header</div>
+                  </div>
+                  <div class="param-desc-col"></div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getMetarValues', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getMetarValues', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getMetarValues', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getMetarValues')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getMetarValues">curl -X GET 'https://app.weathercloud.net/metar/values/EBBR' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getMetarValues')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getMetarValues">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Operation: getStationPage -->
+      <section class="op-section " id="sec_getStationPage">
+        <div style="display: flex;">
+          <div class="doc-pane">
+            <div class="op-header">
+              <div class="op-meta-pills">
+                <span class="sdk-group-pill">stations.getStationPage()</span>
+                <span class="avail-pill">generally-available</span>
+              </div>
+              <h1 class="op-title">Station HTML page (scrape station name)</h1>
+              <div class="endpoint-pill">
+                <span class="method-badge get">GET</span>
+                <span class="path">/d{deviceId}</span>
+              </div>
+              <p class="op-desc">The station **name** is not available from any JSON API endpoint.<br/>The easiest way to get it is to fetch the station's HTML page and extract<br/>the name from the `<title>` or `og:title` meta tag.<br/><br/>**Example response title:**<br/>```<br/>WeatherStation Skyline - Weathercloud | Global network of weather stations<br/>```<br/><br/>Strip everything from ` - Weathercloud` onward to get the clean station name.<br/><br/>> This is a plain HTML page, not a JSON API. Use it for scraping only.<br/></p>
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <div class="params-table"><div class="param-row">
+                  <div class="param-name-col">
+                    <div class="param-name">deviceId<span class="param-req">*</span></div>
+                    <div class="param-type">string • path</div>
+                  </div>
+                  <div class="param-desc-col"> (Example: <code>0826505936</code>)</div>
+                </div></div>
+
+            <div class="section-title">Response</div>
+            <div class="params-table">
+              <div class="param-row">
+                <div class="param-name-col">
+                  <div class="param-name">200 OK</div>
+                  <div class="param-type">application/json</div>
+                </div>
+                <div class="param-desc-col">Successful response returning requested data or telemetry.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-pane">
+            <!-- Request Snippet Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <div class="lang-tabs">
+                  <button class="tab-btn active" onclick="switchTab('getStationPage', 'curl')">cURL</button>
+                  <button class="tab-btn" onclick="switchTab('getStationPage', 'python')">Python</button>
+                  <button class="tab-btn" onclick="switchTab('getStationPage', 'ts')">TypeScript</button>
+                </div>
+                <button class="copy-btn" title="Copy code" onclick="copyCode('getStationPage')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="code_getStationPage">curl -X GET 'https://app.weathercloud.net/d0826505936' \ \
+  -H 'X-Requested-With: XMLHttpRequest'</div>
+            </div>
+
+            <!-- Response Preview Box -->
+            <div class="console-box">
+              <div class="console-header">
+                <span class="response-status-badge">200 OK</span>
+                <button class="copy-btn" title="Copy JSON" onclick="copyResponse('getStationPage')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="code-content" id="resp_getStationPage">{
+  "status": "success",
+  "data": { ... }
+}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const snippets = {"login": {"curl": "curl -X POST 'https://app.weathercloud.net/signin' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/signin'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/signin', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getDeviceValues": {"curl": "curl -X GET 'https://app.weathercloud.net/device/values/5726468552' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/values/5726468552'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/values/5726468552', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getDeviceStats": {"curl": "curl -X GET 'https://app.weathercloud.net/device/stats' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/stats'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/stats', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getDeviceInfo": {"curl": "curl -X GET 'https://app.weathercloud.net/device/info/5726468552' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/info/5726468552'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/info/5726468552', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getWindRose": {"curl": "curl -X GET 'https://app.weathercloud.net/device/wind' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/wind'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/wind', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getUpdateStatus": {"curl": "curl -X POST 'https://app.weathercloud.net/device/ajaxupdatedate' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/ajaxupdatedate'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/ajaxupdatedate', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getOwnerProfile": {"curl": "curl -X POST 'https://app.weathercloud.net/device/ajaxprofile' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/ajaxprofile'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/ajaxprofile', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getEvolution": {"curl": "curl -X POST 'https://app.weathercloud.net/device/evolution' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/device/evolution'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/device/evolution', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getForecast": {"curl": "curl -X GET 'https://app.weathercloud.net/forecast/daily' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/forecast/daily'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/forecast/daily', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getMapDevices": {"curl": "curl -X POST 'https://app.weathercloud.net/map/devices' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/map/devices'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/map/devices', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getMapBgDevices": {"curl": "curl -X POST 'https://app.weathercloud.net/map/bgdevices' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/map/bgdevices'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/map/bgdevices', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getMapMetars": {"curl": "curl -X POST 'https://app.weathercloud.net/map/metars' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\ \\\n  -d 'variable=101&period=week'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/map/metars'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\ndata = {'variable': 101, 'period': 'week'}\nresponse = requests.post(url, headers=headers, data=data)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/map/metars', {\n  method: 'POST',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n  body: new URLSearchParams({ variable: '101', period: 'week' }),\n});\nconst data = await response.json();\nconsole.log(data);"}, "getNearbyStations": {"curl": "curl -X GET 'https://app.weathercloud.net/page/coordinates/latitude/50.9475/longitude/3.1205/distance/5' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/page/coordinates/latitude/50.9475/longitude/3.1205/distance/5'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/page/coordinates/latitude/50.9475/longitude/3.1205/distance/5', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getPopularStations": {"curl": "curl -X GET 'https://app.weathercloud.net/page/popular/country/BE/period/day' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/page/popular/country/BE/period/day'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/page/popular/country/BE/period/day', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getNewestStations": {"curl": "curl -X GET 'https://app.weathercloud.net/page/newest/country/BE' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/page/newest/country/BE'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/page/newest/country/BE', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getMostFollowedStations": {"curl": "curl -X GET 'https://app.weathercloud.net/page/followers/country/BE' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/page/followers/country/BE'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/page/followers/country/BE', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getLastViewedStations": {"curl": "curl -X GET 'https://app.weathercloud.net/page/lastviews' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/page/lastviews'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/page/lastviews', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getOwnStations": {"curl": "curl -X GET 'https://app.weathercloud.net/page/own' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/page/own'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/page/own', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getMetarValues": {"curl": "curl -X GET 'https://app.weathercloud.net/metar/values/EBBR' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/metar/values/EBBR'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/metar/values/EBBR', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}, "getStationPage": {"curl": "curl -X GET 'https://app.weathercloud.net/d0826505936' \\ \\\n  -H 'X-Requested-With: XMLHttpRequest'", "python": "import requests\n\nurl = 'https://app.weathercloud.net/d0826505936'\nheaders = {'X-Requested-With': 'XMLHttpRequest'}\nresponse = requests.get(url, headers=headers)\nprint(response.json())", "ts": "const response = await fetch('https://app.weathercloud.net/d0826505936', {\n  method: 'GET',\n  headers: {\n    'X-Requested-With': 'XMLHttpRequest',\n  },\n});\nconst data = await response.json();\nconsole.log(data);"}};
+
+    function showEndpoint(id) {
+      document.querySelectorAll('.op-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      
+      const sec = document.getElementById('sec_' + id);
+      const nav = document.querySelector('.nav-item[data-id="' + id + '"]');
+      if (sec) sec.classList.add('active');
+      if (nav) nav.classList.add('active');
+      window.location.hash = id;
+    }
+
+    function switchTab(epId, lang) {
+      const sec = document.getElementById('sec_' + epId);
+      if (!sec) return;
+      sec.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const clicked = event.target;
+      clicked.classList.add('active');
+      
+      const codeBlock = document.getElementById('code_' + epId);
+      if (codeBlock && snippets[epId]) {
+        codeBlock.textContent = snippets[epId][lang] || snippets[epId]['curl'];
       }
-      body {
-        margin: 0;
-        background-color: #0f172a;
+    }
+
+    function copyCode(epId) {
+      const codeBlock = document.getElementById('code_' + epId);
+      if (codeBlock) {
+        navigator.clipboard.writeText(codeBlock.textContent);
+        const btn = event.currentTarget;
+        btn.style.color = '#10b981';
+        setTimeout(() => btn.style.color = '', 1200);
       }
-    </style>
-  </head>
-  <body>
-    <script
-      id="api-reference"
-      type="application/yaml"
-      data-configuration='{"theme": "deepSpace", "darkMode": true, "layout": "modern", "showSidebar": true, "searchHotKey": "k", "defaultHttpClient": {"targetKey": "python", "clientKey": "requests"}}'>openapi: 3.0.3
-info:
-  title: Weathercloud Unofficial API
-  description: |
-    Reverse-engineered API for [app.weathercloud.net](https://app.weathercloud.net).
+    }
 
-    **No authentication required** — all endpoints work without any CSRF token or login.
+    function copyResponse(epId) {
+      const respBlock = document.getElementById('resp_' + epId);
+      if (respBlock) {
+        navigator.clipboard.writeText(respBlock.textContent);
+        const btn = event.currentTarget;
+        btn.style.color = '#10b981';
+        setTimeout(() => btn.style.color = '', 1200);
+      }
+    }
 
-    ---
+    // Search filter
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.nav-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    });
 
-    ### IDs
+    // Shortcut
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
 
-    | Type | Format | Example |
-    |------|--------|---------|
-    | Weather station | 10-digit numeric string | `5726468552` from `app.weathercloud.net/d5726468552` |
-    | METAR / airport | ICAO code (4 letters) | `EBBR` for Brussels Airport |
-
-    ### METAR support
-    Most `device/*` routes also work for METAR (airport) stations by swapping the prefix:
-    `/device/values/{id}` → `/metar/values/{id}`
-
-    ### Rate limiting
-    Weathercloud rate-limits API requests. Free stations update every **10 minutes**, paid stations every **1 minute** — avoid polling more frequently than that.
-
-    ---
-
-    ### Import into Postman / API tools
-    **File → Import** → upload `openapi.yaml` (or paste the raw URL of this file).
-
-    ---
-
-    > **Home Assistant** — most useful endpoints:
-    > - `GET /device/values/{deviceId}` — live sensor readings
-    > - `GET /device/stats` — current + daily/monthly/yearly min/max
-    > - `GET /device/info/{deviceId}` — station metadata
-  version: "1.0.0"
-  contact:
-    name: Mauro Druwel
-    url: https://github.com/MauroDruwel/Weathercloud
-  license:
-    name: MIT
-    url: https://github.com/MauroDruwel/Weathercloud/blob/main/LICENSE
-
-servers:
-  - url: https://app.weathercloud.net
-    description: Production Weathercloud API
-
-security: []
-
-tags:
-  - name: Device (live)
-    description: Real-time and current sensor data — most useful for Home Assistant
-  - name: Device (history)
-    description: Historical data and time-series
-  - name: Forecast
-    description: Weather forecast
-  - name: Map
-    description: Map / nearby station discovery
-  - name: Pages
-    description: Station listing pages
-  - name: Miscellaneous
-    description: Undocumented tricks and HTML scraping
-  - name: Authentication
-    description: User session and login endpoints
-
-paths:
-
-  /signin:
-    post:
-      operationId: login
-      x-fern-sdk-group-name: auth
-      x-fern-sdk-method-name: login
-      x-fern-availability: generally-available
-      tags: [Authentication]
-      summary: User login / authentication
-      description: |
-        Authenticates a user session to allow viewing private indoor sensors (`tempin`, `humin`, `heatin`) for the user's station.
-        This endpoint expects form urlencoded data and returns a `302 Found` redirect on successful login.
-      requestBody:
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                "LoginForm[entity]":
-                  type: string
-                  description: Username or email address
-                "LoginForm[password]":
-                  type: string
-                  description: Account password
-                "LoginForm[rememberMe]":
-                  type: string
-                  enum: ["0", "1"]
-                  default: "1"
-                  description: Keep the user logged in
-              required:
-                - "LoginForm[entity]"
-                - "LoginForm[password]"
-      responses:
-        "302":
-          description: Successful authentication redirecting to user profile
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
-                description: Session cookies (e.g. `PHPSESSID`)
-        "200":
-          description: Authentication failed (renders login form with errors)
-
-  /device/values/{deviceId}:
-    get:
-      operationId: getDeviceValues
-      x-fern-sdk-group-name: device.live
-      x-fern-sdk-method-name: getValues
-      x-fern-availability: generally-available
-      tags: [Device (live)]
-      summary: Current sensor readings ⭐
-      description: |
-        Returns the latest sensor values for a device. **No CSRF token needed.**
-        This is the primary endpoint for a Home Assistant sensor integration.
-      parameters:
-        - $ref: '#/components/parameters/deviceIdPath'
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Current weather readings
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceValues'
-              example:
-                epoch: 1779825116
-                temp: 24.8
-                dew: 15.2
-                chill: 24.8
-                heat: 24.8
-                hum: 55
-                bar: 1024.9
-                wdir: 344
-                wspd: 0.6
-                wspdavg: 0.6
-                wspdhi: 1.0
-                rainrate: 0
-                rain: 0
-                solarrad: 0.0
-                uvi: 0
-                wdiravg: 344
-
-  /device/stats:
-    get:
-      operationId: getDeviceStats
-      x-fern-sdk-group-name: device.live
-      x-fern-sdk-method-name: getStats
-      x-fern-availability: generally-available
-      tags: [Device (live)]
-      summary: Current + min/max statistics ⭐
-      description: |
-        Returns current values plus day/month/year min and max for all sensors.
-        Each value is a `[unix_timestamp, value]` tuple.
-      parameters:
-        - name: code
-          in: query
-          required: true
-          schema:
-            type: string
-          example: "5726468552"
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Statistics for all sensors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceStats'
-
-  /device/info/{deviceId}:
-    get:
-      operationId: getDeviceInfo
-      x-fern-sdk-group-name: device.live
-      x-fern-sdk-method-name: getInfo
-      x-fern-availability: generally-available
-      tags: [Device (live)]
-      summary: Station metadata ⭐
-      description: Station name, location, elevation, equipment info.
-      parameters:
-        - $ref: '#/components/parameters/deviceIdPath'
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Station metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceInfo'
-
-  /device/wind:
-    get:
-      operationId: getWindRose
-      x-fern-sdk-group-name: device.live
-      x-fern-sdk-method-name: getWindRose
-      x-fern-availability: generally-available
-      tags: [Device (live)]
-      summary: Wind rose data
-      description: Wind direction distribution data for the wind rose chart.
-      parameters:
-        - name: code
-          in: query
-          required: true
-          schema:
-            type: string
-          example: "5726468552"
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Wind rose data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WindData'
-
-  /device/ajaxupdatedate:
-    post:
-      operationId: getUpdateStatus
-      x-fern-sdk-group-name: device.live
-      x-fern-sdk-method-name: getUpdateStatus
-      x-fern-availability: generally-available
-      tags: [Device (live)]
-      summary: Last update time + status
-      description: |
-        Returns seconds since last update and device online status.
-
-        > ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [d]
-              properties:
-                d:
-                  type: string
-                  description: Device ID
-                  example: "5726468552"
-      responses:
-        "200":
-          description: Update date info
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  update:
-                    type: integer
-                    description: Seconds since last update
-                    example: 71
-                  status:
-                    type: string
-                    description: '"1" = online, "2" = recently online, "3" = offline'
-                    example: "2"
-                  server_time:
-                    type: integer
-                    description: Current server Unix timestamp
-                    example: 1779825187
-
-  /device/ajaxprofile:
-    post:
-      operationId: getOwnerProfile
-      x-fern-sdk-group-name: device.live
-      x-fern-sdk-method-name: getOwnerProfile
-      x-fern-availability: generally-available
-      tags: [Device (live)]
-      summary: Station owner profile
-      description: |
-        Returns observer name, follower count, and device brand/model.
-
-        > ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [d]
-              properties:
-                d:
-                  type: string
-                  example: "5726468552"
-      responses:
-        "200":
-          description: Profile info
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceProfile'
-              example:
-                observer:
-                  name: "Gino Wallaert"
-                  nickname: "Ginometeo"
-                  company: ""
-                followers:
-                  number: "1"
-                device:
-                  brand: "Other"
-                  model: "Other"
-
-  /device/evolution:
-    post:
-      operationId: getEvolution
-      x-fern-sdk-group-name: device.history
-      x-fern-sdk-method-name: getEvolution
-      x-fern-availability: generally-available
-      tags: [Device (history)]
-      summary: Time-series history for a variable
-      description: |
-        Returns hourly aggregated history for a given variable and period.
-
-        > ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.
-        
-        **Variable codes:**
-        | Code | Sensor |
-        |------|--------|
-        | 101  | Temperature (°C) |
-        | 201  | Humidity (%) |
-        | 541  | Dew point (°C) |
-        | 641  | Barometric pressure (hPa) |
-        | 701  | Wind speed (m/s) |
-        | 6001 | Wind direction (°) |
-        | 6501 | Wind gust / high speed (m/s) |
-        | 801  | Rain (mm) |
-        | 811  | Rain rate (mm/h) |
-        | 1001 | Solar radiation (W/m²) |
-        | 1101 | UV index |
-        
-        **Period values:** `day`, `week`, `month`, `year`
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [device, variable, period]
-              properties:
-                device:
-                  type: string
-                  example: "5726468552"
-                variable:
-                  type: integer
-                  enum: [101, 201, 541, 641, 701, 6001, 6501, 801, 811, 1001, 1101]
-                  example: 101
-                period:
-                  type: string
-                  enum: [day, week, month, year]
-                  example: day
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Time-series evolution data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvolutionResponse'
-
-  /forecast/daily:
-    get:
-      operationId: getForecast
-      x-fern-sdk-group-name: forecast
-      x-fern-sdk-method-name: getDaily
-      x-fern-availability: generally-available
-      tags: [Forecast]
-      summary: Daily weather forecast
-      parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: string
-          example: "5726468552"
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Daily forecast (6 days from WMO)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForecastResponse'
-              example:
-                info:
-                  source: WMO
-                  web: https://worldweather.wmo.int
-                  days: 6
-                location:
-                  name: Ingelmunster
-                forecast:
-                  "2026-05-28":
-                    weather:
-                      code: 12
-                    temperature:
-                      max: 29
-                      min: 16
-
-  /map/devices:
-    post:
-      operationId: getMapDevices
-      x-fern-sdk-group-name: map
-      x-fern-sdk-method-name: getDevices
-      x-fern-availability: generally-available
-      tags: [Map]
-      summary: Stations on map within area
-      description: |
-        Returns stations visible on the map for a given location bounding box.
-
-        > ⚠️ **Requires `X-Requested-With: XMLHttpRequest`** header — without it the server returns an empty 200.
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                user:
-                  type: string
-                  description: Filter by user (empty = all)
-                location:
-                  type: string
-                  description: "lat,lon,zoom format"
-                  example: "50.9,3.1,10"
-      responses:
-        "200":
-          description: Stations on the map as arrays of scaled values
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MapDevicesResponse'
-
-  /map/bgdevices:
-    post:
-      operationId: getMapBgDevices
-      x-fern-sdk-group-name: map
-      x-fern-sdk-method-name: getBackgroundDevices
-      x-fern-availability: generally-available
-      tags: [Map]
-      summary: Background/inactive stations on map
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                user:
-                  type: string
-      responses:
-        "200":
-          description: Inactive/background stations (same array format as /map/devices)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MapDevicesResponse'
-
-  /map/metars:
-    post:
-      operationId: getMapMetars
-      x-fern-sdk-group-name: map
-      x-fern-sdk-method-name: getMetars
-      x-fern-availability: generally-available
-      tags: [Map]
-      summary: METAR airport observations on map
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      requestBody:
-        required: false
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-      responses:
-        "200":
-          description: METAR airport observations as arrays
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  metars:
-                    type: array
-                    description: |
-                      Each entry: `[icao, city, lat, lon, status, 0, wdir, hum, bar*10, wspd*10, wdir2, 0, "", "", ""]`
-                    items:
-                      type: array
-                      example: ["EBBR", "Brussels", 50.9014, 4.4844, 2, 0, 260, 58, 10220, 80, 260, 0, "", "", ""]
-
-  /page/coordinates/latitude/{lat}/longitude/{lon}/distance/{km}:
-    get:
-      operationId: getNearbyStations
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getNearby
-      x-fern-availability: generally-available
-      tags: [Pages]
-      summary: Stations near coordinates ⭐
-      description: |
-        Returns nearby stations as JSON (despite `text/html` content-type header).
-        All `page/*` endpoints return `PageDevice` objects that include the **station name**.
-        Values are scaled integers — divide by 10 (e.g. `temp: 281` = 28.1°C).
-      parameters:
-        - name: lat
-          in: path
-          required: true
-          schema:
-            type: number
-          example: 50.9475
-        - name: lon
-          in: path
-          required: true
-          schema:
-            type: number
-          example: 3.1205
-        - name: km
-          in: path
-          required: true
-          schema:
-            type: integer
-          example: 5
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Nearby stations with name, coordinates and current values
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageDevicesResponse'
-
-  /page/popular/country/{country}/period/{period}:
-    get:
-      operationId: getPopularStations
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getPopular
-      x-fern-availability: generally-available
-      tags: [Pages]
-      summary: Popular stations by country
-      parameters:
-        - name: country
-          in: path
-          required: true
-          schema:
-            type: string
-          example: BE
-        - name: period
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [day, week, month]
-          example: day
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Popular stations with name and current values
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageDevicesResponse'
-
-  /page/newest/country/{country}:
-    get:
-      operationId: getNewestStations
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getNewest
-      x-fern-availability: generally-available
-      tags: [Pages]
-      summary: Newest stations by country
-      parameters:
-        - name: country
-          in: path
-          required: true
-          schema:
-            type: string
-          example: BE
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Newest stations with name and current values
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageDevicesResponse'
-
-  /page/followers/country/{country}:
-    get:
-      operationId: getMostFollowedStations
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getMostFollowed
-      x-fern-availability: generally-available
-      tags: [Pages]
-      summary: Most followed stations by country
-      parameters:
-        - name: country
-          in: path
-          required: true
-          schema:
-            type: string
-          example: BE
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Most followed stations with name and current values
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageDevicesResponse'
-
-  /page/lastviews:
-    get:
-      operationId: getLastViewedStations
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getLastViews
-      x-fern-availability: generally-available
-      tags: [Pages]
-      summary: Recently viewed stations
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Last viewed stations (empty array if not logged in)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageDevicesResponse'
-
-  /page/own:
-    get:
-      operationId: getOwnStations
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getOwn
-      x-fern-availability: generally-available
-      tags: [Pages]
-      summary: Own stations (requires login)
-      parameters:
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Your stations (empty array if not logged in)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageDevicesResponse'
-
-  /metar/values/{deviceId}:
-    get:
-      operationId: getMetarValues
-      x-fern-sdk-group-name: metar
-      x-fern-sdk-method-name: getValues
-      x-fern-availability: generally-available
-      tags: [Miscellaneous]
-      summary: METAR station — current readings
-      description: |
-        Most `device/*` routes work identically for METAR (airport) stations by replacing the `device` prefix with `metar`.
-
-        METAR station IDs are **ICAO codes** (4 letters), e.g. `EBBR` for Brussels Airport.
-
-        **Supported `metar/*` routes (same request/response as their `device/*` counterparts):**
-        - `GET /metar/values/{icao}` — current readings
-        - `GET /metar/stats?code={icao}` — statistics
-        - `GET /metar/wind?code={icao}` — wind rose
-        - `GET /metar/info/{icao}` — station metadata
-        - `POST /metar/ajaxupdatedate` — last update time
-        - `POST /metar/ajaxprofile` — station profile
-        - `POST /metar/evolution` — time-series history
-
-        > **Not supported for METAR:** `/device/ajaxdevicestats`
-      parameters:
-        - name: deviceId
-          in: path
-          required: true
-          description: ICAO airport code
-          schema:
-            type: string
-          example: "EBBR"
-        - $ref: '#/components/parameters/xRequestedWith'
-      responses:
-        "200":
-          description: Same structure as `/device/values/{deviceId}`
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceValues'
-
-  /d{deviceId}:
-    get:
-      operationId: getStationPage
-      x-fern-sdk-group-name: stations
-      x-fern-sdk-method-name: getStationPage
-      x-fern-availability: generally-available
-      tags: [Miscellaneous]
-      summary: Station HTML page (scrape station name)
-      description: |
-        The station **name** is not available from any JSON API endpoint.
-        The easiest way to get it is to fetch the station's HTML page and extract
-        the name from the `<title>` or `og:title` meta tag.
-
-        **Example response title:**
-        ```
-        WeatherStation Skyline - Weathercloud | Global network of weather stations
-        ```
-
-        Strip everything from ` - Weathercloud` onward to get the clean station name.
-
-        > This is a plain HTML page, not a JSON API. Use it for scraping only.
-      parameters:
-        - name: deviceId
-          in: path
-          required: true
-          schema:
-            type: string
-          example: "0826505936"
-      responses:
-        "200":
-          description: HTML page — extract station name from `<title>` or `<meta property="og:title">`
-          content:
-            text/html:
-              schema:
-                type: string
-
-components:
-  parameters:
-    deviceIdPath:
-      name: deviceId
-      in: path
-      required: true
-      schema:
-        type: string
-      example: "5726468552"
-    xRequestedWith:
-      name: X-Requested-With
-      in: header
-      required: false
-      schema:
-        type: string
-        default: XMLHttpRequest
-
-  schemas:
-    DeviceValues:
-      type: object
-      description: Live sensor readings
-      properties:
-        epoch:
-          type: integer
-          description: Unix timestamp of reading
-        temp:
-          type: number
-          description: Temperature (°C)
-        dew:
-          type: number
-          description: Dew point (°C)
-        chill:
-          type: number
-          description: Wind chill (°C)
-        heat:
-          type: number
-          description: Heat index (°C)
-        hum:
-          type: integer
-          description: Relative humidity (%)
-        bar:
-          type: number
-          description: Barometric pressure (hPa)
-        wdir:
-          type: integer
-          description: Instantaneous wind direction (°)
-        wdiravg:
-          type: integer
-          description: Average wind direction (°)
-        wspd:
-          type: number
-          description: Instantaneous wind speed (m/s)
-        wspdavg:
-          type: number
-          description: Average wind speed (m/s)
-        wspdhi:
-          type: number
-          description: Wind gust / high speed (m/s)
-        rainrate:
-          type: number
-          description: Rain rate (mm/h)
-        rain:
-          type: number
-          description: Total rain (mm)
-        solarrad:
-          type: number
-          description: Solar radiation (W/m²)
-        uvi:
-          type: number
-          description: UV index (standard units, not ×10 — can be fractional, e.g. 0.9)
-        tempin:
-          type: number
-          description: Inside temperature (°C) — requires authentication
-        humin:
-          type: integer
-          description: Inside relative humidity (%) — requires authentication
-        heatin:
-          type: number
-          description: Inside heat index (°C) — requires authentication
-
-    DeviceStats:
-      type: object
-      description: |
-        Current readings and period statistics for all sensors.
-        All values are `[unix_timestamp, value]` tuples (`TimestampValue`).
-
-        **Key pattern:** `{sensor}_{period}_{type}`
-        - Sensors: `temp`, `tempin`, `dew`, `chill`, `heat`, `heatin`, `hum`, `humin`, `bar`, `wdir`, `wdiravg`, `wspd`, `wspdavg`, `wspdhi`, `rainrate`, `rain`, `solarrad`, `uvi`
-        - Period types: `current`, `day_max`, `day_min`, `month_max`, `month_min`, `year_max`, `year_min`
-        - Rain also has: `day_total`, `month_total`, `year_total`
-        - Solarrad also has: `day_hours`, `month_hours`, `year_hours`
-      properties:
-        last_update:
-          type: integer
-          description: Unix timestamp of last reading
-      additionalProperties:
-        $ref: '#/components/schemas/TimestampValue'
-
-    TimestampValue:
-      type: array
-      description: "[unix_timestamp, value]"
-      items:
-        type: number
-      minItems: 2
-      maxItems: 2
-      example: [1779825116, 24.8]
-
-    DeviceInfo:
-      type: object
-      description: |
-        Station metadata and current sensor snapshot.
-        Note: sensor values are returned as strings; unavailable sensors show `-3276.8` / `-32768`.
-      properties:
-        device:
-          type: object
-          properties:
-            account:
-              type: integer
-              description: Account type (0 = free)
-            status:
-              type: string
-              description: '"1" = online, "2" = recently online, "3" = offline'
-            city:
-              type: string
-              description: City name
-            altitude:
-              type: string
-              description: Altitude in metres (as string)
-            image:
-              type: string
-              nullable: true
-              description: URL to station photo, or null
-            isWebcam:
-              type: boolean
-            favorite:
-              type: boolean
-            social:
-              type: boolean
-            update:
-              type: integer
-              description: Seconds since last update
-        values:
-          type: object
-          description: |
-            Current sensor readings as strings.
-            Unavailable sensors return `"-3276.8"` (float sensors) or `"-32768"` (integer sensors).
-          properties:
-            temp:
-              type: string
-              description: Temperature (°C)
-            hum:
-              type: string
-              description: Relative humidity (%)
-            dew:
-              type: string
-              description: Dew point (°C)
-            wspdavg:
-              type: string
-              description: Average wind speed (m/s)
-            wdiravg:
-              type: string
-              description: Average wind direction (°)
-            bar:
-              type: string
-              description: Barometric pressure (hPa)
-            rain:
-              type: string
-              description: Total rain (mm)
-            rainrate:
-              type: string
-              description: Rain rate (mm/h)
-            solarrad:
-              type: string
-              description: Solar radiation (W/m²)
-            uvi:
-              type: string
-              description: UV index
-
-    DeviceProfile:
-      type: object
-      properties:
-        observer:
-          type: object
-          properties:
-            name:
-              type: string
-            nickname:
-              type: string
-            company:
-              type: string
-        followers:
-          type: object
-          properties:
-            number:
-              type: string
-        device:
-          type: object
-          properties:
-            brand:
-              type: string
-            model:
-              type: string
-
-    WindData:
-      type: object
-      properties:
-        date:
-          type: integer
-          description: Unix timestamp (start of period)
-        values:
-          type: array
-          description: 16 compass directions, each with sum and scale array
-          items:
-            type: object
-            properties:
-              sum:
-                type: number
-              scale:
-                type: array
-                items:
-                  type: integer
-
-    EvolutionResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: success
-        data:
-          type: object
-          properties:
-            timezone:
-              type: string
-              example: "Europe/Brussels"
-            summary:
-              type: object
-              description: Keyed by variable code (e.g. "101")
-              additionalProperties:
-                type: object
-                properties:
-                  samples:
-                    type: integer
-                  sum:
-                    type: number
-                  min:
-                    type: number
-                  min_time:
-                    type: integer
-                  max:
-                    type: number
-                  max_time:
-                    type: integer
-            values:
-              type: object
-              description: |
-                Keyed by Unix timestamp (hour buckets), then by variable code.
-                Each entry has `samples` and `stats`.
-              additionalProperties:
-                type: object
-                additionalProperties:
-                  type: object
-                  properties:
-                    samples:
-                      type: integer
-                    stats:
-                      type: object
-                      properties:
-                        sum:
-                          type: number
-                        min:
-                          type: number
-                        min_time:
-                          type: integer
-                        max:
-                          type: number
-                        max_time:
-                          type: integer
-
-    PageDevice:
-      type: object
-      description: Station entry returned by page/coordinates
-      properties:
-        type:
-          type: string
-          example: device
-        code:
-          type: string
-          description: Device ID (numeric string)
-          example: "2034767194"
-        name:
-          type: string
-          description: Station name as set by the owner
-          example: "WeatherStation Skyline"
-        city:
-          type: string
-        latitude:
-          type: string
-        longitude:
-          type: string
-        elevation:
-          type: string
-          description: Altitude in metres
-        image:
-          type: string
-        isWebcam:
-          type: boolean
-        account:
-          type: integer
-        isFavorite:
-          type: boolean
-        update:
-          type: integer
-          description: Seconds since last update
-        data:
-          type: string
-          description: Distance from query point (km)
-        values:
-          type: object
-          description: |
-            Scaled integer sensor readings — divide by 10 for most values.
-            e.g. `temp: 281` → 28.1°C, `bar: 10247` → 1024.7 hPa, `uvi: 70` → UV 7.0
-          properties:
-            epoch:
-              type: string
-            temp:
-              type: string
-            hum:
-              type: string
-            dew:
-              type: string
-            chill:
-              type: string
-            heat:
-              type: string
-            bar:
-              type: string
-            wdir:
-              type: string
-            wspd:
-              type: string
-            wspdavg:
-              type: string
-            wspdhi:
-              type: string
-            rainrate:
-              type: string
-            rain:
-              type: string
-            solarrad:
-              type: string
-            uvi:
-              type: string
-            tempin:
-              type: string
-              description: Indoor temperature (°C, scaled ×10) — if sensor present
-            humin:
-              type: string
-              description: Indoor humidity (%, scaled ×10) — if sensor present
-    PageDevicesResponse:
-      type: object
-      properties:
-        devices:
-          type: array
-          items:
-            $ref: '#/components/schemas/PageDevice'
-
-    ForecastResponse:
-      type: object
-      properties:
-        info:
-          type: object
-          properties:
-            source:
-              type: string
-              example: WMO
-            web:
-              type: string
-              example: https://worldweather.wmo.int
-            days:
-              type: integer
-              example: 6
-        location:
-          type: object
-          properties:
-            name:
-              type: string
-              description: Nearest city name
-              example: Ingelmunster
-        forecast:
-          type: object
-          description: Keyed by date string (YYYY-MM-DD)
-          additionalProperties:
-            type: object
-            properties:
-              weather:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    description: WMO weather interpretation code
-              temperature:
-                type: object
-                properties:
-                  max:
-                    type: integer
-                    nullable: true
-                  min:
-                    type: integer
-                    nullable: true
-
-    MapDevicesResponse:
-      type: object
-      description: |
-        Stations as compact arrays. Also contains `owner` and `favorites` arrays (empty unless logged in).
-      properties:
-        devices:
-          type: array
-          description: |
-            Each entry is an array:
-            `[id, city, lat, lon, status, 0, temp×10, hum, bar×10, wspd×10, wdir, rainrate×10, rain×10, solarrad×10, uvi×10]`
-
-            - `status`: 1=online, 2=recently online, 3=offline
-            - Divide index 6 and above by 10 to get real units
-          items:
-            type: array
-            example: ["RWACTX", "Wilsele-Herent", 50.904295, 4.69565, 2, 0, 277, 54, 10270, 19, 336, 0, 0, 8050, 47]
-        owner:
-          type: array
-          description: Owner's own stations (empty if not logged in)
-          items:
-            type: array
-        favorites:
-          type: array
-          description: Favourite stations (empty if not logged in)
-          items:
-            type: array
-</script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
-  </body>
+    // Initialize from hash
+    const initialHash = window.location.hash.replace('#', '') || 'login';
+    showEndpoint(initialHash);
+  </script>
+</body>
 </html>
