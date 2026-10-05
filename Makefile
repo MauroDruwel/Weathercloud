@@ -1,4 +1,4 @@
-.PHONY: all lint lint-openapi lint-fern docs generate generate-python generate-csharp generate-typescript generate-go
+.PHONY: all lint lint-openapi lint-fern docs generate generate-python generate-csharp generate-typescript generate-go generate-rust
 
 all: lint docs generate
 
@@ -27,3 +27,6 @@ generate-typescript:
 
 generate-go:
 	npx --yes fern-api generate --group go-sdk --local
+
+generate-rust:
+	npx --yes fern-api generate --group rust-sdk --local

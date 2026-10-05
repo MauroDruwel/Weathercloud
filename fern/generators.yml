@@ -20,8 +20,16 @@ groups:
           path: ../sdks/python
         config:
           client_class_name: WeathercloudClient
+          package_name: weathercloud
           inline_path_params: true
           retry_status_codes: recommended
+  csharp-sdk:
+    generators:
+      - name: fernapi/fern-csharp-sdk
+        version: 2.86.1
+        output:
+          location: local-file-system
+          path: ../sdks/csharp
   typescript-sdk:
     generators:
       - name: fernapi/fern-typescript-sdk
@@ -38,10 +46,10 @@ groups:
         output:
           location: local-file-system
           path: ../sdks/go
-  csharp-sdk:
+  rust-sdk:
     generators:
-      - name: fernapi/fern-csharp-sdk
-        version: 2.86.1
+      - name: fern-rust-sdk
+        version: 0.53.0
         output:
           location: local-file-system
-          path: ../sdks/csharp
+          path: ../sdks/rust
