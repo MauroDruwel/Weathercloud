@@ -6,10 +6,11 @@ import weathercloud
 def test_public_api_exports():
     expected = {
         "WeathercloudClient",
-        "WeathercloudError",
-        "VariableCode",
-        "CurrentConditions",
-        "StationInfo",
+        "AsyncWeathercloudClient",
+        "DeviceValues",
+        "DeviceInfo",
+        "DeviceStats",
+        "ForecastResponse",
         "__version__",
     }
     assert expected.issubset(set(weathercloud.__all__))
@@ -19,4 +20,4 @@ def test_public_api_exports():
 
 def test_version_is_string():
     assert isinstance(weathercloud.__version__, str)
-    assert weathercloud.__version__.count(".") >= 2
+    assert weathercloud.__version__ == "1.0.0"

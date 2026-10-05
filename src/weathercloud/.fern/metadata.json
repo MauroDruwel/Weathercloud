@@ -1,0 +1,13 @@
+{
+  "cliVersion": "5.140.0",
+  "generatorName": "fernapi/fern-python-sdk",
+  "generatorVersion": "5.18.1",
+  "generatorConfig": {
+    "client_class_name": "WeathercloudClient",
+    "inline_path_params": true,
+    "retry_status_codes": "recommended"
+  },
+  "originGitCommit": "dc23b02ef99720811f626ae678a6781e5cc4cf44",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual"
+}

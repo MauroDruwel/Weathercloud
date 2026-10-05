@@ -1,18 +1,24 @@
 from __future__ import annotations
 
+from typing import Any
+
+import httpx
 import pytest
-import responses
 
 from weathercloud import (
-    CurrentConditions,
-    StationInfo,
-    VariableCode,
+    AsyncWeathercloudClient,
+    DeviceInfo,
+    DeviceStats,
+    DeviceValues,
+    ForecastResponse,
+    PageDevicesResponse,
     WeathercloudClient,
-    WeathercloudError,
 )
+from weathercloud.core.api_error import ApiError
 
 BASE = "https://app.weathercloud.net"
 DEVICE_ID = "5726468552"
+ICAO_ID = "EBBR"
 
 VALUES_PAYLOAD = {
     "epoch": 1748358122,
@@ -36,514 +42,178 @@ VALUES_PAYLOAD = {
     "heatin": "22.0",
 }
 
-
-@pytest.fixture
-def client():
-    with WeathercloudClient() as c:
-        yield c
-
-
-@responses.activate
-def test_get_current_conditions_returns_typed_dataclass(client):
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=VALUES_PAYLOAD)
-
-    cond = client.get_current_conditions(DEVICE_ID)
-
-    assert isinstance(cond, CurrentConditions)
-    assert cond.temperature == 22.8
-    assert cond.humidity == 62
-    assert cond.wind_gust == 1.4
-    assert cond.uv_index == 3
-    assert cond.epoch == 1748358122
-    assert cond.inside_temperature == 21.5
-    assert cond.inside_humidity == 55
-    assert cond.inside_heat_index == 22.0
-
-
-@responses.activate
-def test_get_current_conditions_fractional_uv_index(client):
-    payload = dict(VALUES_PAYLOAD, uvi="0.9")
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=payload)
-
-    cond = client.get_current_conditions(DEVICE_ID)
-
-    # UV index is transmitted in standard units and can be fractional.
-    assert cond.uv_index == 0.9
-
-
-@responses.activate
-def test_get_current_conditions_missing_keys_become_none(client):
-    payload = {"epoch": 1748358122, "temp": "22.8", "hum": "62"}
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=payload)
-
-    cond = client.get_current_conditions(DEVICE_ID)
-
-    assert cond.temperature == 22.8
-    assert cond.humidity == 62
-    # Sensors the station doesn't report are None, not errors.
-    assert cond.pressure is None
-    assert cond.wind_gust is None
-    assert cond.uv_index is None
-    assert cond.rain is None
-
-
-@responses.activate
-def test_get_current_conditions_unparseable_values_become_none(client):
-    payload = dict(VALUES_PAYLOAD, temp="", hum="n/a", uvi=None)
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=payload)
-
-    cond = client.get_current_conditions(DEVICE_ID)
-
-    assert cond.temperature is None
-    assert cond.humidity is None
-    assert cond.uv_index is None
-    # Other valid readings still parse.
-    assert cond.wind_gust == 1.4
-
-
-@responses.activate
-def test_get_current_conditions_non_object_raises(client):
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=["unexpected"])
-
-    with pytest.raises(WeathercloudError, match="Expected a JSON object"):
-        client.get_current_conditions(DEVICE_ID)
-
-
-@responses.activate
-def test_http_error_wrapped(client):
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", status=500)
-
-    with pytest.raises(WeathercloudError, match="Request failed"):
-        client.get_current_conditions(DEVICE_ID)
-
-
-@responses.activate
-def test_non_json_response_wrapped(client):
-    responses.get(
-        f"{BASE}/device/values/{DEVICE_ID}",
-        body="<html>nope</html>",
-        content_type="text/html",
-    )
-
-    with pytest.raises(WeathercloudError, match="Expected JSON"):
-        client.get_current_conditions(DEVICE_ID)
-
-
-@responses.activate
-def test_get_station_info_without_scrape(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "altitude": "18.0",
-                         "status": "1", "update": "42", "account": "0"}},
-    )
-    responses.get(
-        f"{BASE}/d{DEVICE_ID}",
-        body="<html><head><title>Ginometeo - Weathercloud</title></head>"
-             "<body><script>var latitude = 50.83; var longitude = 3.27;</script></body></html>",
-        content_type="text/html",
-    )
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False)
-
-    assert isinstance(info, StationInfo)
-    assert info.name == DEVICE_ID  # not scraped
-    assert info.city == "Ingelmunster"
-    assert info.status == "online"
-    assert info.seconds_since_update == 42
-    assert info.account_type == 0
-    # Coordinates still fetched (fetch_location=True by default)
-    assert info.latitude == 50.83
-    assert info.longitude == 3.27
-
-
-@responses.activate
-def test_get_station_info_no_network_when_both_false(client):
-    """scrape_name=False AND fetch_location=False → only /device/info is called."""
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "altitude": "18.0",
-                         "status": "1", "update": "42", "account": "0"}},
-    )
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
-
-    assert info.name == DEVICE_ID
-    assert info.latitude is None
-    assert info.longitude is None
-    assert len(responses.calls) == 1
-
-
-@responses.activate
-def test_get_station_info_with_scrape(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "altitude": "18.0",
-                         "status": "3", "update": "0", "account": "1"}},
-    )
-    responses.get(
-        f"{BASE}/d{DEVICE_ID}",
-        body="<html><head><title>Ginometeo - Weathercloud</title></head>"
-             "<body><script>var latitude = 50.83; var longitude = 3.27;</script></body></html>",
-        content_type="text/html",
-    )
-
-    info = client.get_station_info(DEVICE_ID)
-
-    assert info.name == "Ginometeo"
-    assert info.status == "offline"
-    assert info.account_type == 1
-    assert info.latitude == 50.83
-    assert info.longitude == 3.27
-
-
-@responses.activate
-def test_get_station_info_unknown_status(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"status": "9"}},
-    )
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
-    assert info.status == "unknown"
-
-
-@responses.activate
-def test_get_station_info_missing_device_fields_dont_fail(client):
-    responses.get(f"{BASE}/device/info/{DEVICE_ID}", json={})
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
-
-    assert info.city == ""
-    assert info.altitude == ""
-    assert info.status == "unknown"
-    assert info.seconds_since_update == 0
-    assert info.account_type == 0
-
-
-@responses.activate
-def test_get_station_info_bad_numeric_fields_dont_fail(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"update": "n/a", "account": "", "city": None}},
-    )
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=False)
-
-    assert info.seconds_since_update == 0
-    assert info.account_type == 0
-    assert info.city == ""
-
-
-# ------------------------------------------------------------------
-# Location fetching via HTML scrape (var latitude / var longitude)
-# ------------------------------------------------------------------
-
-STATION_HTML_WITH_COORDS = """
-<html><head><title>Ginometeo - Weathercloud</title></head>
-<body>
-    <script>
-    var latitude = 50.8303345;
-    var longitude = 3.2696646;
-    </script>
-</body></html>
-"""
-
-STATION_HTML_WITHOUT_COORDS = """
-<html><head><title>Ginometeo - Weathercloud</title></head>
-<body><p>no coords here</p></body></html>
-"""
-
-
-@responses.activate
-def test_get_station_info_fetches_location_from_html(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "altitude": "18.0",
-                         "status": "1", "update": "10", "account": "0"}},
-    )
-    responses.get(f"{BASE}/d{DEVICE_ID}", body=STATION_HTML_WITH_COORDS,
-                  content_type="text/html")
-
-    info = client.get_station_info(DEVICE_ID)
-
-    assert info.latitude == 50.8303345
-    assert info.longitude == 3.2696646
-    assert info.name == "Ginometeo"
-    # Only 2 requests: /device/info + /d{id}
-    assert len(responses.calls) == 2
-
-
-@responses.activate
-def test_get_station_info_location_none_when_coords_absent(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "status": "1",
-                         "update": "0", "account": "0"}},
-    )
-    responses.get(f"{BASE}/d{DEVICE_ID}", body=STATION_HTML_WITHOUT_COORDS,
-                  content_type="text/html")
-
-    info = client.get_station_info(DEVICE_ID)
-
-    assert info.latitude is None
-    assert info.longitude is None
-    assert info.name == "Ginometeo"
-
-
-@responses.activate
-def test_get_station_info_fetch_location_false_skips_html_scrape(client):
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "status": "1",
-                         "update": "0", "account": "0"}},
-    )
-    # scrape_name=False AND fetch_location=False → no HTML request at all.
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False,
-                                   fetch_location=False)
-
-    assert info.latitude is None
-    assert info.longitude is None
-    assert info.name == DEVICE_ID
-    assert len(responses.calls) == 1  # only /device/info
-
-
-@responses.activate
-def test_get_station_info_scrape_name_false_fetch_location_true(client):
-    """fetch_location=True still works even when scrape_name=False — one HTML request."""
-    responses.get(
-        f"{BASE}/device/info/{DEVICE_ID}",
-        json={"device": {"city": "Ingelmunster", "status": "1",
-                         "update": "0", "account": "0"}},
-    )
-    responses.get(f"{BASE}/d{DEVICE_ID}", body=STATION_HTML_WITH_COORDS,
-                  content_type="text/html")
-
-    info = client.get_station_info(DEVICE_ID, scrape_name=False, fetch_location=True)
-
-    # Name falls back to device_id since scrape_name=False
-    assert info.name == DEVICE_ID
-    # But coordinates are still populated
-    assert info.latitude == 50.8303345
-    assert info.longitude == 3.2696646
-
-
-@responses.activate
-def test_get_station_name_parsed(client):
-    responses.get(
-        f"{BASE}/d{DEVICE_ID}",
-        body="<TITLE>My Station - Weathercloud - extra</TITLE>",
-        content_type="text/html",
-    )
-
-    assert client.get_station_name(DEVICE_ID) == "My Station"
-
-
-@responses.activate
-def test_get_station_name_no_title_falls_back_to_id(client):
-    responses.get(f"{BASE}/d{DEVICE_ID}", body="<html>no title here</html>")
-
-    assert client.get_station_name(DEVICE_ID) == DEVICE_ID
-
-
-@responses.activate
-def test_get_station_name_network_error_wrapped(client):
-    responses.get(f"{BASE}/d{DEVICE_ID}", status=404)
-
-    with pytest.raises(WeathercloudError, match="Failed to fetch station page"):
-        client.get_station_name(DEVICE_ID)
-
-
-@responses.activate
-def test_get_device_stats_uses_code_param(client):
-    responses.get(f"{BASE}/device/stats", json={"temp_day_max": [1, 30.9]})
-
-    result = client.get_device_stats(DEVICE_ID)
-
-    assert result["temp_day_max"] == [1, 30.9]
-    assert responses.calls[0].request.params["code"] == DEVICE_ID
-
-
-@responses.activate
-def test_get_evolution_posts_expected_body(client):
-    responses.post(f"{BASE}/device/evolution", json={"data": {}})
-
-    client.get_evolution(DEVICE_ID, VariableCode.TEMPERATURE, period="week")
-
-    body = responses.calls[0].request.body
-    assert "variable=101" in body
-    assert "period=week" in body
-    assert f"device={DEVICE_ID}" in body
-
-
-@responses.activate
-def test_get_evolution_accepts_raw_int(client):
-    responses.post(f"{BASE}/device/evolution", json={})
-
-    client.get_evolution(DEVICE_ID, 201)
-
-    assert "variable=201" in responses.calls[0].request.body
-
-
-@responses.activate
-def test_get_nearby_stations_builds_url(client):
-    url = f"{BASE}/page/coordinates/latitude/50.9/longitude/3.1/distance/10"
-    responses.get(url, json={"devices": []})
-
-    result = client.get_nearby_stations(lat=50.9, lon=3.1, distance_km=10)
-
-    assert result == {"devices": []}
-
-
-@responses.activate
-def test_post_endpoints(client):
-    responses.post(f"{BASE}/device/ajaxupdatedate", json={"update": 30})
-    responses.post(f"{BASE}/device/ajaxprofile", json={"name": "owner"})
-
-    assert client.get_update_status(DEVICE_ID) == {"update": 30}
-    assert client.get_owner_profile(DEVICE_ID) == {"name": "owner"}
-
-
-def test_base_url_trailing_slash_stripped():
-    c = WeathercloudClient(base_url="https://example.com/")
-    assert c._base_url == "https://example.com"
-    c.close()
-
-
-def test_default_headers_set():
-    c = WeathercloudClient()
-    assert c._session.headers["X-Requested-With"] == "XMLHttpRequest"
-    assert "User-Agent" in c._session.headers
-    c.close()
-
-
-def test_context_manager_closes_session():
-    with WeathercloudClient() as c:
-        session = c._session
-    # close() on a requests.Session is idempotent; just ensure no error.
-    session.close()
-
-
-# ------------------------------------------------------------------
-# ICAO / METAR routing
-# ------------------------------------------------------------------
-
-ICAO_ID = "LEPA"
-METAR_PAYLOAD = {
-    "epoch": 1780687800,
-    "temp": 21,
-    "dew": 13,
-    "chill": 21,
-    "heat": 20,
-    "hum": 60,
-    "wspdavg": 4,
-    "wspdhi": 0,
-    "wdiravg": 70,
-    "bar": 1016,
-    "rain": 0,
-    "vis": 100,
-    "rainrate": 0,
+STATS_PAYLOAD = {
+    "code": "101",
+    "temp": {"cur": "22.8", "min": "14.2", "max": "26.5"},
+}
+
+DEVICE_INFO_PAYLOAD = {
+    "device": {
+        "name": "Station 5726468552",
+        "city": "Brussels",
+        "altitude": "45",
+        "model": "Davis Vantage Pro2",
+        "account_type": 0,
+    },
+    "values": {
+        "status": "1",
+        "seconds_since_update": 120,
+    },
+}
+
+FORECAST_PAYLOAD = {
+    "forecast": {
+        "2026-10-01": {"temp": {"min": 12, "max": 24}, "weather": {"code": 1}}
+    }
+}
+
+POPULAR_PAYLOAD = {
+    "devices": [
+        {"name": "Station Alpha", "code": "5726468552", "city": "Brussels"}
+    ]
 }
 
 
-@responses.activate
-def test_get_device_values_uses_metar_endpoint_for_icao(client):
-    responses.get(f"{BASE}/metar/values/{ICAO_ID}", json=METAR_PAYLOAD)
+def create_mock_client(
+    routes: dict[str, tuple[int, Any, dict[str, str] | None]] | None = None,
+) -> WeathercloudClient:
+    routes = routes or {}
 
-    result = client.get_device_values(ICAO_ID)
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        path = request.url.raw_path.decode()
+        for pattern, (status, data, headers) in routes.items():
+            if pattern in url or pattern == path:
+                resp_headers = headers or {"content-type": "application/json"}
+                if isinstance(data, str):
+                    return httpx.Response(status, text=data, headers=resp_headers)
+                return httpx.Response(status, json=data, headers=resp_headers)
+        return httpx.Response(404, json={"error": "Not Found"})
 
-    assert result["epoch"] == 1780687800
-    assert result["temp"] == 21
-    assert len(responses.calls) == 1
-    assert f"/metar/values/{ICAO_ID}" in responses.calls[0].request.url
-
-
-@responses.activate
-def test_get_current_conditions_uses_metar_endpoint_for_icao(client):
-    responses.get(f"{BASE}/metar/values/{ICAO_ID}", json=METAR_PAYLOAD)
-
-    cond = client.get_current_conditions(ICAO_ID)
-
-    assert isinstance(cond, CurrentConditions)
-    assert cond.temperature == 21.0
-    assert cond.humidity == 60
-    assert cond.epoch == 1780687800
-    assert f"/metar/values/{ICAO_ID}" in responses.calls[0].request.url
+    transport = httpx.MockTransport(handler)
+    http_client = httpx.Client(transport=transport, base_url=BASE)
+    return WeathercloudClient(base_url=BASE, httpx_client=http_client)
 
 
-@responses.activate
-def test_get_device_values_uses_device_endpoint_for_numeric_id(client):
-    responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=VALUES_PAYLOAD)
+def create_async_mock_client(
+    routes: dict[str, tuple[int, Any, dict[str, str] | None]] | None = None,
+) -> AsyncWeathercloudClient:
+    routes = routes or {}
 
-    client.get_device_values(DEVICE_ID)
+    async def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        path = request.url.raw_path.decode()
+        for pattern, (status, data, headers) in routes.items():
+            if pattern in url or pattern == path:
+                resp_headers = headers or {"content-type": "application/json"}
+                if isinstance(data, str):
+                    return httpx.Response(status, text=data, headers=resp_headers)
+                return httpx.Response(status, json=data, headers=resp_headers)
+        return httpx.Response(404, json={"error": "Not Found"})
 
-    assert f"/device/values/{DEVICE_ID}" in responses.calls[0].request.url
-
-
-def test_values_path_icao_detection(client):
-    assert client._values_path("LEPA") == "/metar/values/LEPA"
-    assert client._values_path("EGLL") == "/metar/values/EGLL"
-    assert client._values_path("KJFK") == "/metar/values/KJFK"
-    assert client._values_path("5726468552") == "/device/values/5726468552"
-    assert client._values_path("lepa") == "/device/values/lepa"  # lowercase not ICAO
-    assert client._values_path("LEP") == "/device/values/LEP"    # 3 chars not ICAO
-
-
-@responses.activate
-def test_login_success():
-    with WeathercloudClient(username="testuser", password="testpassword") as client:
-        # Mock GET / to initialize cookies
-        responses.get(f"{BASE}/", status=200)
-        # Mock POST /signin to authenticate
-        responses.post(f"{BASE}/signin", status=302, headers={"Location": "/"})
-        # Mock actual request
-        responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=VALUES_PAYLOAD)
-
-        cond = client.get_current_conditions(DEVICE_ID)
-        assert cond.inside_temperature == 21.5
-        assert len(responses.calls) == 3
+    transport = httpx.MockTransport(handler)
+    async_http_client = httpx.AsyncClient(transport=transport, base_url=BASE)
+    return AsyncWeathercloudClient(base_url=BASE, httpx_client=async_http_client)
 
 
-@responses.activate
-def test_login_failure():
-    with WeathercloudClient(username="testuser", password="testpassword") as client:
-        responses.get(f"{BASE}/", status=200)
-        # Mock login failed (e.g. returns 200 instead of 302 redirect)
-        responses.post(f"{BASE}/signin", status=200)
-
-        with pytest.raises(WeathercloudError, match="Login failed"):
-            client.get_current_conditions(DEVICE_ID)
+# ==============================================================================
+# Synchronous Sub-Client Tests
+# ==============================================================================
 
 
-@responses.activate
-def test_session_expiry_and_retry_success():
-    with WeathercloudClient(username="testuser", password="testpassword") as client:
-        # Pre-set logged in state
-        client._logged_in = True
+def test_device_live_get_values():
+    client = create_mock_client({f"/device/values/{DEVICE_ID}": (200, VALUES_PAYLOAD, None)})
+    res = client.device_live.get_values(device_id=DEVICE_ID)
 
-        # First request to get_device_values results in a redirect to signin
-        responses.get(
-            f"{BASE}/device/values/{DEVICE_ID}",
-            status=302,
-            headers={"Location": "/signin"},
-        )
-        # Mock the followed redirect to signin HTML page
-        responses.get(
-            f"{BASE}/signin",
-            status=200,
-            body="<html>LoginForm</html>",
-            content_type="text/html",
-        )
+    assert isinstance(res, DeviceValues)
+    assert res.temp == 22.8
+    assert res.hum == 62
+    assert res.bar == 1013.2
+    assert res.epoch == 1748358122
+    assert res.tempin == 21.5
 
-        # Retry triggers login: GET / then POST /signin
-        responses.get(f"{BASE}/", status=200)
-        responses.post(f"{BASE}/signin", status=302, headers={"Location": "/"})
 
-        # The retried request succeeds
-        responses.get(f"{BASE}/device/values/{DEVICE_ID}", json=VALUES_PAYLOAD)
+def test_device_live_get_stats():
+    client = create_mock_client({"/device/stats": (200, STATS_PAYLOAD, None)})
+    res = client.device_live.get_stats(code="101")
 
-        cond = client.get_current_conditions(DEVICE_ID)
-        assert cond.inside_temperature == 21.5
-        # Total calls: 2 (failed request + followed redirect)
-        # + 1 (GET /) + 1 (POST /signin) + 1 (retried request) = 5
-        assert len(responses.calls) == 5
+    assert isinstance(res, DeviceStats)
+
+
+def test_device_live_get_info():
+    client = create_mock_client({f"/device/info/{DEVICE_ID}": (200, DEVICE_INFO_PAYLOAD, None)})
+    res = client.device_live.get_info(device_id=DEVICE_ID)
+
+    assert isinstance(res, DeviceInfo)
+    assert res.device is not None
+    assert res.device.name == "Station 5726468552"
+    assert res.device.city == "Brussels"
+    assert res.values is not None
+    assert res.values.status == "1"
+
+
+def test_forecast_get_daily():
+    client = create_mock_client({"/forecast/daily": (200, FORECAST_PAYLOAD, None)})
+    res = client.forecast.get_daily(id=DEVICE_ID)
+
+    assert isinstance(res, ForecastResponse)
+
+
+def test_metar_get_values():
+    client = create_mock_client({f"/metar/values/{ICAO_ID}": (200, VALUES_PAYLOAD, None)})
+    res = client.metar.get_values(device_id=ICAO_ID)
+
+    assert isinstance(res, DeviceValues)
+    assert res.temp == 22.8
+
+
+def test_stations_get_popular():
+    client = create_mock_client({"/page/popular": (200, POPULAR_PAYLOAD, None)})
+    res = client.stations.get_popular(country="BE", period="day")
+
+    assert isinstance(res, PageDevicesResponse)
+    assert res.devices is not None
+    assert len(res.devices) == 1
+    assert res.devices[0].name == "Station Alpha"
+
+
+def test_error_handling_raises_api_error():
+    client = create_mock_client({f"/device/values/{DEVICE_ID}": (500, {"error": "Server error"}, None)})
+    with pytest.raises(ApiError) as exc_info:
+        client.device_live.get_values(device_id=DEVICE_ID)
+
+    assert exc_info.value.status_code == 500
+
+
+# ==============================================================================
+# Asynchronous Sub-Client Tests
+# ==============================================================================
+
+
+@pytest.mark.anyio
+async def test_async_device_live_get_values():
+    client = create_async_mock_client({f"/device/values/{DEVICE_ID}": (200, VALUES_PAYLOAD, None)})
+    res = await client.device_live.get_values(device_id=DEVICE_ID)
+
+    assert isinstance(res, DeviceValues)
+    assert res.temp == 22.8
+    assert res.hum == 62
+
+
+@pytest.mark.anyio
+async def test_async_device_live_get_info():
+    client = create_async_mock_client({f"/device/info/{DEVICE_ID}": (200, DEVICE_INFO_PAYLOAD, None)})
+    res = await client.device_live.get_info(device_id=DEVICE_ID)
+
+    assert isinstance(res, DeviceInfo)
+    assert res.device is not None
+    assert res.device.city == "Brussels"
+
+
+@pytest.mark.anyio
+async def test_async_error_handling_raises_api_error():
+    client = create_async_mock_client({f"/device/values/{DEVICE_ID}": (404, {"error": "Station not found"}, None)})
+    with pytest.raises(ApiError) as exc_info:
+        await client.device_live.get_values(device_id=DEVICE_ID)
+
+    assert exc_info.value.status_code == 404
