@@ -1,159 +1,43 @@
-# weathercloud
+# Weathercloud API & Cloudflare Forge Pipeline
 
-[![PyPI](https://img.shields.io/pypi/v/weathercloud.svg)](https://pypi.org/project/weathercloud/)
-[![Python](https://img.shields.io/pypi/pyversions/weathercloud.svg)](https://pypi.org/project/weathercloud/)
-[![CI](https://github.com/MauroDruwel/Weathercloud/actions/workflows/ci.yml/badge.svg)](https://github.com/MauroDruwel/Weathercloud/actions/workflows/ci.yml)
 [![Cloudflare Forge](https://github.com/MauroDruwel/Weathercloud/actions/workflows/forge.yml/badge.svg)](https://github.com/MauroDruwel/Weathercloud/actions/workflows/forge.yml)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539.svg)](./openapi.yaml)
+[![API Docs](https://img.shields.io/badge/docs-Scalar%20Reference-F6821F.svg)](https://weathercloud-api.maurodruwel.be)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Official schema-first, fully-typed Python SDK for [Weathercloud](https://app.weathercloud.net).
-Powered by **Cloudflare Forge** and Fern code generation from the canonical [`openapi.yaml`](./openapi.yaml) definition.
+The single source of truth OpenAPI specification and **Cloudflare Forge** generation pipeline for [Weathercloud](https://app.weathercloud.net).
 
-Read live sensor conditions, station metadata, historical evolution, popular stations, airport METARs, and forecasts from any public station — **no account, no API key required** for public data.
+Read live weather conditions, station metadata, historical records, airport METARs, and weather forecasts from public weather stations — **no API key required** for public station data.
 
-> ⚠️ Reverse-engineered from the public web app. Not affiliated with or endorsed
-> by Weathercloud; upstream endpoints may change without notice.
+> ⚠️ Reverse-engineered from the public web app. Not affiliated with or endorsed by Weathercloud; upstream endpoints may change without notice.
 
 ---
 
-## 📢 Version 1.0.0 Breaking Changes & Deprecation Notice
+## 📚 Interactive API Documentation
 
-> [!WARNING]
-> **`weathercloud >= 1.0.0` is a complete schema-first rewrite.**
->
-> All legacy `v0.1.x` methods (`get_current_conditions()`, `get_station_info()`, `CurrentConditions`, `StationInfo`, `VariableCode`, `WeathercloudError`) are **deprecated and removed** in favor of direct, typed sub-clients (`client.device_live`, `client.forecast`, etc.) returning Pydantic v2 models.
->
-> If you are maintaining an existing integration (such as Home Assistant), see the [Migration Guide (v0.1.x → v1.0.0)](#-migration-guide-v01x--v100) below.
+Browse the full, interactive [Scalar API Reference](https://weathercloud-api.maurodruwel.be) hosted on Cloudflare Pages:
+* **Interactive Testing**: Test requests directly from your browser.
+* **Schema Inspector**: Explore strongly-typed request and response structures.
+* **Code Snippets**: Instant samples for Python, JavaScript, cURL, Go, C#, and more.
 
 ---
 
-## ✨ Highlights
+## 📦 Official Client Libraries (SDKs)
 
-- ⚡ **100% Schema-First Architecture** — Zero handwritten HTTP boilerplate. The entire Python SDK is generated directly from [`openapi.yaml`](./openapi.yaml) via Fern.
-- 🏗️ **Sync & Async Out-of-the-Box** — Includes both `WeathercloudClient` and `AsyncWeathercloudClient` powered by modern `httpx` with automatic retries and connection pooling.
-- 🧱 **Strict Pydantic v2 Typing** — Strongly-typed models (`DeviceValues`, `DeviceInfo`, `DeviceStats`, `ForecastResponse`) with validation and serialization.
-- 🤖 **Native Model Context Protocol (MCP)** — Powered directly by `@cloudflare/forge-mcp` from `openapi.yaml` for Claude Desktop, Cursor, and AI coding agents.
-- 📚 **Interactive API Portal** — Saturn-themed [Scalar API reference](https://weathercloud-api.maurodruwel.be) with instant search, dark mode, and native Python snippets.
-- 🧪 **Strictly Tested & Typed** — Ships `py.typed`, passes `mypy` and `ruff`, and supports Python 3.10–3.13.
+Client libraries are generated automatically from [`openapi.yaml`](./openapi.yaml) using Fern and published to their respective language ecosystems:
 
----
-
-## 📦 Installation
-
-```sh
-pip install weathercloud
-```
-
-Or with `uv`:
-
-```sh
-uv add weathercloud
-```
-
----
-
-## 🚀 Quick start
-
-### Synchronous Client
-
-```python
-from weathercloud import WeathercloudClient
-
-client = WeathercloudClient()
-
-# Live weather sensor readings:
-values = client.device_live.get_values(device_id="5726468552")
-print(f"Temperature: {values.temp}°C, Humidity: {values.hum}%, Pressure: {values.bar} hPa")
-
-# Station metadata:
-info = client.device_live.get_info(device_id="5726468552")
-print(f"Station: {info.device.name} in {info.device.city}, Status: {info.values.status}")
-
-# Airport METAR weather (ICAO code):
-metar = client.metar.get_values(device_id="EBBR")
-print(f"EBBR Pressure: {metar.bar} hPa, Wind Speed: {metar.wspd} m/s")
-```
-
-### Asynchronous Client (`httpx`-powered, ideal for Home Assistant)
-
-```python
-import asyncio
-from weathercloud import AsyncWeathercloudClient
-
-async def main():
-    client = AsyncWeathercloudClient()
-
-    # Direct non-blocking async calls — no executor needed!
-    values = await client.device_live.get_values(device_id="5726468552")
-    print(f"Async Temp: {values.temp}°C")
-
-asyncio.run(main())
-```
-
----
-
-## 📖 API Reference
-
-All operations are grouped into typed sub-clients:
-
-| Sub-client | Method | Return Type | Description |
-|---|---|---|---|
-| `client.device_live` | `get_values(device_id=...)` | `DeviceValues` | Real-time weather sensor readings |
-| `client.device_live` | `get_info(device_id=...)` | `DeviceInfo` | Station metadata, model, update interval |
-| `client.device_live` | `get_stats(code=...)` | `DeviceStats` | Daily/monthly/yearly min-max statistics |
-| `client.device_history` | `get_evolution(device=..., variable=..., period=...)` | `EvolutionResponse` | Hourly bucket historical time-series |
-| `client.forecast` | `get_daily(id=...)` | `ForecastResponse` | 6-day WMO daily weather forecast |
-| `client.stations` | `get_popular(country=..., period=...)` | `PageDevicesResponse` | Top-ranked popular weather stations |
-| `client.stations` | `get_nearby(lat=..., lon=..., km=...)` | `PageDevicesResponse` | Stations within a radius of GPS coordinates |
-| `client.metar` | `get_values(device_id=...)` | `DeviceValues` | Official airport METAR observation |
-| `client.map_` | `get_devices(...)` | `MapDevicesResponse` | Bounding box station discovery |
-| `client.auth` | `login(...)` | `str` | Account sign-in for private indoor sensors |
-
-### Error Handling
-
-All failed API requests raise `ApiError` with HTTP status code and response body:
-
-```python
-from weathercloud import WeathercloudClient
-from weathercloud.core.api_error import ApiError
-
-client = WeathercloudClient()
-
-try:
-    values = client.device_live.get_values(device_id="5726468552")
-except ApiError as e:
-    print(f"API Error ({e.status_code}): {e.body}")
-```
-
----
-
-## 🔄 Migration Guide (v0.1.x → v1.0.0)
-
-If you are upgrading from `weathercloud < 1.0.0`:
-
-### 1. Live Readings
-- **Old**: `cond = client.get_current_conditions("5726468552")` -> `cond.temperature`, `cond.humidity`, `cond.wind_speed`
-- **New**: `values = client.device_live.get_values(device_id="5726468552")` -> `values.temp`, `values.hum`, `values.wspd`
-
-### 2. Station Metadata
-- **Old**: `info = client.get_station_info("5726468552")` (scraped HTML from web page)
-- **New**: `info = client.device_live.get_info(device_id="5726468552")` -> `info.device.name`, `info.device.city`, `info.device.altitude`, `info.values.status`
-
-### 3. Error Handling
-- **Old**: `except WeathercloudError:`
-- **New**: `from weathercloud.core.api_error import ApiError` -> `except ApiError as e:`
-
-### 4. Async Support
-- **Old**: Sync only (`requests`). Required `hass.async_add_executor_job()`.
-- **New**: Native `AsyncWeathercloudClient` with `await client.device_live.get_values(...)`.
+| Language | Ecosystem / Registry | Repository | Install Command |
+| :--- | :--- | :--- | :--- |
+| **Python** | [PyPI](https://pypi.org/project/weathercloud/) | [`MauroDruwel/weathercloud-py`](https://github.com/MauroDruwel/weathercloud-py) | `pip install weathercloud` |
+| **C# / .NET** | [NuGet](https://www.nuget.org/) | [`MauroDruwel/weathercloud-csharp`](https://github.com/MauroDruwel/weathercloud-csharp) | `dotnet add package WeathercloudApi` |
+| **TypeScript / Node** | [npm](https://www.npmjs.com/) | [`MauroDruwel/weathercloud-ts`](https://github.com/MauroDruwel/weathercloud-ts) | `npm install @weathercloud/sdk` |
+| **Go** | Go Modules | [`MauroDruwel/weathercloud-go`](https://github.com/MauroDruwel/weathercloud-go) | `go get github.com/MauroDruwel/weathercloud-go` |
 
 ---
 
 ## 🤖 Model Context Protocol (MCP) for AI Agents
 
-Because this repository is built on Cloudflare Forge, MCP is served directly from [`openapi.yaml`](./openapi.yaml) via `@cloudflare/forge-mcp` with zero custom code:
-
-Add to your `claude_desktop_config.json` or Cursor MCP configuration:
+Serve real-time Weathercloud station sensors to Claude Desktop, Cursor, or Antigravity with zero code using Cloudflare's `@cloudflare/forge-mcp`:
 
 ```json
 {
@@ -173,57 +57,54 @@ Add to your `claude_desktop_config.json` or Cursor MCP configuration:
 
 ---
 
-## ⚡ Cloudflare Forge Pipeline
+## 🏗️ Architecture
 
-A unified developer script powers both local validation and CI:
-
-```sh
-# Lint OpenAPI spec and check Fern workspace
-python scripts/forge.py lint
-
-# Generate typed Python SDK (default)
-python scripts/forge.py generate
-
-# Generate other language SDKs from the same OpenAPI specification:
-python scripts/forge.py generate --target csharp      # C# (.NET 8/Standard) SDK in sdks/csharp/
-python scripts/forge.py generate --target typescript  # TypeScript SDK in sdks/typescript/
-python scripts/forge.py generate --target go          # Go module SDK in sdks/go/
-python scripts/forge.py generate --target all         # Generate all SDKs simultaneously
-
-# Build interactive Scalar documentation in docs/index.html
-python scripts/forge.py docs
-
-# Run Python SDK test suite
-python scripts/forge.py test
-
-# Build distribution packages (wheel + sdist)
-python scripts/forge.py build
-
-# Execute full pipeline end-to-end
-python scripts/forge.py all
+```
+                       MauroDruwel/Weathercloud
+                     ┌───────────────────────────┐
+                     │       openapi.yaml        │  <-- Single source of truth
+                     │    (Cloudflare Forge)     │
+                     └─────────────┬─────────────┘
+                                   │
+         ┌─────────────────────────┼─────────────────────────┐
+         │                         │                         │
+         ▼                         ▼                         ▼
+   Scalar Docs                MCP Server              Fern Multi-SDKs
+ (Cloudflare Pages)     (@cloudflare/forge-mcp)              │
+weathercloud-api.maurodruwel.be                              │
+                                   ┌─────────────────────────┼─────────────────────────┐
+                                   ▼                         ▼                         ▼
+                           weathercloud-py          weathercloud-csharp        weathercloud-ts
+                             (PyPI / uv)                  (NuGet)                   (npm)
 ```
 
 ---
 
-## 🛠️ Development
+## 🛠️ Development & Pipeline
+
+This repository is 100% stock Node.js tooling (`@redocly/cli` and `fern-api`). You can run targets using either `make` or `npm`:
 
 ```sh
-git clone https://github.com/MauroDruwel/Weathercloud
-cd Weathercloud
+# Install dev dependencies
+npm install
 
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev]"
+# Validate OpenAPI spec & Fern configuration
+make lint
+# or: npm run lint
 
-# Lint and type check
-uv run ruff check .
-uv run mypy
+# Bundle OpenAPI for Scalar documentation (docs/openapi.json)
+make docs
+# or: npm run docs
 
-# Run test suite
-uv run pytest -v
+# Generate SDKs locally into sdks/
+make generate
+# or: npm run generate
 
-# Run entire Forge pipeline
-python scripts/forge.py all
+# Generate a specific language SDK:
+make generate-python       # Generates sdks/python/
+make generate-csharp       # Generates sdks/csharp/
+make generate-typescript   # Generates sdks/typescript/
+make generate-go           # Generates sdks/go/
 ```
 
 ---

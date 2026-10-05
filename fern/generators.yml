@@ -17,7 +17,7 @@ groups:
         version: 5.18.1
         output:
           location: local-file-system
-          path: ../src/weathercloud
+          path: ../sdks/python
         config:
           client_class_name: WeathercloudClient
           inline_path_params: true

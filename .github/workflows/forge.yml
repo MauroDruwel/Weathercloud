@@ -8,15 +8,15 @@ on:
     paths:
       - 'openapi.yaml'
       - 'fern/**'
-      - 'src/**'
-      - 'scripts/**'
+      - 'docs/**'
+      - 'package.json'
       - '.github/workflows/forge.yml'
   pull_request:
     paths:
       - 'openapi.yaml'
       - 'fern/**'
-      - 'src/**'
-      - 'scripts/**'
+      - 'docs/**'
+      - 'package.json'
       - '.github/workflows/forge.yml'
   workflow_dispatch:
 
@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   forge_pipeline:
-    name: Cloudflare Forge Validation, Generation & Test
+    name: Cloudflare Forge Validation, Docs & Generation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -35,61 +35,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          version: "latest"
-
-      - name: Install Python dependencies
-        run: |
-          uv pip install --system -e ".[dev]"
+      - name: Install dependencies
+        run: npm install
 
       - name: Validate OpenAPI specification
-        run: |
-          npx --yes @redocly/cli lint openapi.yaml --skip-rule operation-4xx-response
-          echo "✓ openapi.yaml is valid and conforms to Forge extensions"
+        run: npm run lint:openapi
 
       - name: Validate Fern definition
-        run: |
-          npx --yes fern-api check
-          echo "✓ Fern workspace and docs configuration passed verification"
+        run: npm run lint:fern
 
-      - name: Generate typed SDKs via Fern
-        run: |
-          npx --yes fern-api generate --group python-sdk --local --force
-          python -c "import weathercloud; print('✓ Verified weathercloud v' + weathercloud.__version__)"
-          echo "✓ Generated Python SDK in src/weathercloud"
+      - name: Bundle OpenAPI for Scalar Documentation
+        run: npm run docs
 
-      - name: Run test suite across sync and async SDK clients
-        run: |
-          pytest -v
-
-      - name: Generate Scalar API Documentation for Cloudflare Pages
-        run: |
-          python scripts/forge.py docs
-          echo "✓ Generated standalone Scalar API Reference in docs/index.html"
-
-      - name: Build distribution packages
-        run: |
-          uv build
-          echo "✓ Built wheel and sdist distributions in dist/"
+      - name: Verify SDK generation across all languages
+        run: npm run generate
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-documentation
-          path: docs/index.html
-          retention-days: 14
-
-      - name: Upload distribution packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-packages
-          path: dist/*
+          path: |
+            docs/index.html
+            docs/openapi.json
           retention-days: 14
