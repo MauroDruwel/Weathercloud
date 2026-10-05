@@ -32,6 +32,7 @@ Client libraries are generated automatically from [`openapi.yaml`](./openapi.yam
 | **C# / .NET** | [NuGet](https://www.nuget.org/) | [`MauroDruwel/weathercloud-csharp`](https://github.com/MauroDruwel/weathercloud-csharp) | `dotnet add package WeathercloudApi` |
 | **TypeScript / Node** | [npm](https://www.npmjs.com/) | [`MauroDruwel/weathercloud-ts`](https://github.com/MauroDruwel/weathercloud-ts) | `npm install @weathercloud/sdk` |
 | **Go** | Go Modules | [`MauroDruwel/weathercloud-go`](https://github.com/MauroDruwel/weathercloud-go) | `go get github.com/MauroDruwel/weathercloud-go` |
+| **Rust** | [crates.io](https://crates.io/) | [`MauroDruwel/weathercloud-rust`](https://github.com/MauroDruwel/weathercloud-rust) | `cargo add weathercloud_api` |
 
 ---
 
@@ -72,10 +73,10 @@ Serve real-time Weathercloud station sensors to Claude Desktop, Cursor, or Antig
    Scalar Docs                MCP Server              Fern Multi-SDKs
  (Cloudflare Pages)     (@cloudflare/forge-mcp)              │
 weathercloud-api.maurodruwel.be                              │
-                                   ┌─────────────────────────┼─────────────────────────┐
-                                   ▼                         ▼                         ▼
-                           weathercloud-py          weathercloud-csharp        weathercloud-ts
-                             (PyPI / uv)                  (NuGet)                   (npm)
+         ┌─────────────────────────┬─────────────────────────┼─────────────────────────┐
+         ▼                         ▼                         ▼                         ▼
+  weathercloud-py         weathercloud-csharp         weathercloud-ts         weathercloud-rust
+    (PyPI / uv)                 (NuGet)                    (npm)                 (crates.io)
 ```
 
 ---

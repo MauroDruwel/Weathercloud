@@ -12,7 +12,8 @@
     "generate:python": "fern generate --group python-sdk --local",
     "generate:csharp": "fern generate --group csharp-sdk --local",
     "generate:typescript": "fern generate --group typescript-sdk --local",
-    "generate:go": "fern generate --group go-sdk --local"
+    "generate:go": "fern generate --group go-sdk --local",
+    "generate:rust": "fern generate --group rust-sdk --local"
   },
   "devDependencies": {
     "@redocly/cli": "^1.25.0",

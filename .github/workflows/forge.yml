@@ -60,3 +60,57 @@ jobs:
             docs/index.html
             docs/openapi.json
           retention-days: 14
+
+  sync_sdks:
+    name: Auto-Sync SDKs to Dedicated Repositories
+    needs: forge_pipeline
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: python-sdk
+            repo: weathercloud-py
+            dir: sdks/python
+          - group: csharp-sdk
+            repo: weathercloud-csharp
+            dir: sdks/csharp
+          - group: typescript-sdk
+            repo: weathercloud-ts
+            dir: sdks/typescript
+          - group: go-sdk
+            repo: weathercloud-go
+            dir: sdks/go
+          - group: rust-sdk
+            repo: weathercloud-rust
+            dir: sdks/rust
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate ${{ matrix.group }}
+        run: npx fern-api generate --group ${{ matrix.group }} --local
+
+      - name: Push to ${{ matrix.repo }}
+        if: ${{ env.SYNC_TOKEN != '' }}
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          cd ${{ matrix.dir }}
+          git init
+          git add -A
+          git commit -m "chore: auto-sync SDK from OpenAPI spec [skip ci]" || exit 0
+          git branch -M main
+          git remote add origin "https://x-access-token:${SYNC_TOKEN}@github.com/MauroDruwel/${{ matrix.repo }}.git"
+          git push -u origin main --force || echo "Warning: Could not push to ${{ matrix.repo }}. Ensure repo exists and token has access."
