@@ -1,15 +1,18 @@
 {
-  "name": "weathercloud-forge",
+  "name": "weathercloud-api",
   "version": "1.0.0",
   "private": true,
-  "description": "Cloudflare Forge generation pipeline and developer surface tooling for Weathercloud",
+  "description": "OpenAPI specification and Cloudflare Forge documentation pipeline for Weathercloud",
   "scripts": {
-    "lint": "python3 scripts/forge.py lint",
-    "generate": "python3 scripts/forge.py generate",
-    "docs": "python3 scripts/forge.py docs",
-    "test": "python3 scripts/forge.py test",
-    "build": "python3 scripts/forge.py build",
-    "pipeline": "python3 scripts/forge.py all"
+    "lint": "npm run lint:openapi && npm run lint:fern",
+    "lint:openapi": "redocly lint openapi.yaml --skip-rule operation-4xx-response",
+    "lint:fern": "fern check",
+    "docs": "redocly bundle openapi.yaml -o docs/openapi.json --ext json",
+    "generate": "fern generate --local",
+    "generate:python": "fern generate --group python-sdk --local",
+    "generate:csharp": "fern generate --group csharp-sdk --local",
+    "generate:typescript": "fern generate --group typescript-sdk --local",
+    "generate:go": "fern generate --group go-sdk --local"
   },
   "devDependencies": {
     "@redocly/cli": "^1.25.0",
