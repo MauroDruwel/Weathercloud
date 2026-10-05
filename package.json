@@ -1,0 +1,18 @@
+{
+  "name": "weathercloud-forge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Forge generation pipeline and developer surface tooling for Weathercloud",
+  "scripts": {
+    "lint": "python3 scripts/forge.py lint",
+    "generate": "python3 scripts/forge.py generate",
+    "docs": "python3 scripts/forge.py docs",
+    "test": "python3 scripts/forge.py test",
+    "build": "python3 scripts/forge.py build",
+    "pipeline": "python3 scripts/forge.py all"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.25.0",
+    "fern-api": "^5.140.0"
+  }
+}

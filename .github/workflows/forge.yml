@@ -8,11 +8,15 @@ on:
     paths:
       - 'openapi.yaml'
       - 'fern/**'
+      - 'src/**'
+      - 'scripts/**'
       - '.github/workflows/forge.yml'
   pull_request:
     paths:
       - 'openapi.yaml'
       - 'fern/**'
+      - 'src/**'
+      - 'scripts/**'
       - '.github/workflows/forge.yml'
   workflow_dispatch:
 
@@ -20,8 +24,8 @@ permissions:
   contents: read
 
 jobs:
-  validate_and_generate:
-    name: Validate OpenAPI, Fern & Generate Docs
+  forge_pipeline:
+    name: Cloudflare Forge Validation, Generation & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -31,6 +35,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --system -e ".[dev]"
 
       - name: Validate OpenAPI specification
         run: |
@@ -42,48 +60,36 @@ jobs:
           npx --yes fern-api check
           echo "✓ Fern workspace and docs configuration passed verification"
 
+      - name: Generate typed SDKs via Fern
+        run: |
+          npx --yes fern-api generate --group python-sdk --local --force
+          python -c "import weathercloud; print('✓ Verified weathercloud v' + weathercloud.__version__)"
+          echo "✓ Generated Python SDK in src/weathercloud"
+
+      - name: Run test suite across sync and async SDK clients
+        run: |
+          pytest -v
+
       - name: Generate Scalar API Documentation for Cloudflare Pages
         run: |
-          npx --yes @redocly/cli bundle openapi.yaml -o /tmp/bundled-spec.json --ext json
-          node -e "
-            const fs = require('fs');
-            const specJson = fs.readFileSync('/tmp/bundled-spec.json', 'utf8').trim();
-            const html = \`<!doctype html>
-          <html lang=\"en\">
-            <head>
-              <meta charset=\"utf-8\" />
-              <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-              <title>Weathercloud API Reference</title>
-              <link rel=\"icon\" type=\"image/svg+xml\" href=\"https://app.weathercloud.net/favicon.ico\" />
-              <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />
-              <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />
-              <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap\" rel=\"stylesheet\" />
-              <style>
-                :root {
-                  --scalar-font: 'Inter', system-ui, -apple-system, sans-serif;
-                  --scalar-font-code: 'JetBrains Mono', ui-monospace, monospace;
-                  --scalar-color-1: #f6821f;
-                  --scalar-color-accent: #f6821f;
-                }
-              </style>
-            </head>
-            <body>
-              <script
-                id=\"api-reference\"
-                type=\"application/json\"
-                data-configuration='{\"theme\":\"saturn\",\"darkMode\":true,\"layout\":\"modern\",\"showSidebar\":true,\"searchHotKey\":\"k\",\"defaultHttpClient\":{\"targetKey\":\"python\",\"clientKey\":\"requests\"}}'>
-          \${specJson}
-              </script>
-              <script src=\"https://cdn.jsdelivr.net/npm/@scalar/api-reference\"></script>
-            </body>
-          </html>\`;
-            fs.writeFileSync('docs/index.html', html);
-          "
+          python scripts/forge.py docs
           echo "✓ Generated standalone Scalar API Reference in docs/index.html"
+
+      - name: Build distribution packages
+        run: |
+          uv build
+          echo "✓ Built wheel and sdist distributions in dist/"
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-documentation
           path: docs/index.html
+          retention-days: 14
+
+      - name: Upload distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-packages
+          path: dist/*
           retention-days: 14
