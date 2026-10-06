@@ -94,5 +94,5 @@ Publish workflow uses `permissions: contents: read` at the top level and `id-tok
 
 ### README style
 
-The README targets developers, not end users. Light emoji on section headers only. Badges at the top (PyPI version, Python versions, CI, license). Includes a table of `CurrentConditions` fields with types and units. Does not list every method in exhaustive detail — links to the OpenAPI spec at `docs/openapi.yaml` and the hosted Swagger UI instead.
+The README targets developers, not end users. Light emoji on section headers only. Badges at the top (PyPI version, Python versions, CI, license). Includes a table of `CurrentConditions` fields with types and units. Does not list every method in exhaustive detail — links to the OpenAPI spec at `openapi.yaml` and the hosted API docs instead.
 

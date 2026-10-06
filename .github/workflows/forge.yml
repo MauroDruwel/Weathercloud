@@ -1,0 +1,121 @@
+name: Cloudflare Forge Pipeline
+
+on:
+  push:
+    branches:
+      - feat/forge-pipeline
+      - main
+    paths:
+      - 'openapi.yaml'
+      - 'fern/**'
+      - 'docs/**'
+      - 'package.json'
+      - '.github/workflows/forge.yml'
+  pull_request:
+    paths:
+      - 'openapi.yaml'
+      - 'fern/**'
+      - 'docs/**'
+      - 'package.json'
+      - '.github/workflows/forge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  forge_pipeline:
+    name: Cloudflare Forge Validation, Docs & Generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate OpenAPI specification
+        run: npm run lint:openapi
+
+      - name: Validate Fern definition
+        run: npm run lint:fern
+
+      - name: Bundle OpenAPI for Scalar Documentation
+        run: npm run docs
+
+      - name: Verify SDK generation across all languages
+        run: npm run generate
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: |
+            docs/index.html
+            docs/openapi.json
+          retention-days: 14
+
+  sync_sdks:
+    name: Auto-Sync SDKs to Dedicated Repositories
+    needs: forge_pipeline
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: python-sdk
+            repo: weathercloud-py
+            dir: sdks/python
+            flags: ""
+          - group: csharp-sdk
+            repo: weathercloud-csharp
+            dir: sdks/csharp
+            flags: ""
+          - group: typescript-sdk
+            repo: weathercloud-ts
+            dir: sdks/typescript
+            flags: "--package"
+          - group: go-sdk
+            repo: weathercloud-go
+            dir: sdks/go
+            flags: ""
+          - group: rust-sdk
+            repo: weathercloud-rust
+            dir: sdks/rust
+            flags: ""
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate ${{ matrix.group }}
+        run: npx fern-api generate --group ${{ matrix.group }} --local --force ${{ matrix.flags }}
+
+      - name: Push to ${{ matrix.repo }}
+        if: ${{ env.SYNC_TOKEN != '' }}
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          cd ${{ matrix.dir }}
+          git init
+          git add -A
+          git commit -m "chore: auto-sync SDK from OpenAPI spec [skip ci]" || exit 0
+          git branch -M main
+          git remote add origin "https://x-access-token:${SYNC_TOKEN}@github.com/MauroDruwel/${{ matrix.repo }}.git"
+          git push -u origin main --force || echo "Warning: Could not push to ${{ matrix.repo }}. Ensure repo exists and token has access."

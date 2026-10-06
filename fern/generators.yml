@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/generators-yml.json
+api:
+  specs:
+    - openapi: ../openapi.yaml
+      settings:
+        only-include-referenced-schemas: false
+        object-query-parameters: true
+        respect-nullable-schemas: true
+        coerce-enums-to-literals: true
+        path-parameter-order: url-order
+        resolve-schema-collisions: true
+default-group: python-sdk
+groups:
+  python-sdk:
+    generators:
+      - name: fernapi/fern-python-sdk
+        version: 5.18.1
+        output:
+          location: local-file-system
+          path: ../sdks/python
+        config:
+          client_class_name: WeathercloudClient
+          package_name: weathercloud
+          inline_path_params: true
+          retry_status_codes: recommended
+  csharp-sdk:
+    generators:
+      - name: fernapi/fern-csharp-sdk
+        version: 2.86.1
+        output:
+          location: local-file-system
+          path: ../sdks/csharp
+        config:
+          package-id: Weathercloud
+          namespace: Weathercloud
+          client-class-name: WeathercloudClient
+          package-metadata:
+            description: C# SDK for the Weathercloud API
+            authors:
+              - MauroDruwel
+            repository-url: https://github.com/MauroDruwel/weathercloud-csharp
+  typescript-sdk:
+    generators:
+      - name: fernapi/fern-typescript-sdk
+        version: 3.80.1
+        output:
+          location: local-file-system
+          path: ../sdks/typescript
+        config:
+          namespaceExport: Weathercloud
+          skipResponseValidation: true
+          packageJson:
+            name: weathercloud
+            version: 1.0.0
+            description: TypeScript SDK for the Weathercloud API
+            repository:
+              type: git
+              url: https://github.com/MauroDruwel/weathercloud-ts.git
+            author: Mauro Druwel
+            license: MIT
+  go-sdk:
+    generators:
+      - name: fernapi/fern-go-sdk
+        version: 1.47.2
+        output:
+          location: local-file-system
+          path: ../sdks/go
+        config:
+          packageName: weathercloud
+          clientName: WeathercloudClient
+          module:
+            path: github.com/MauroDruwel/weathercloud-go
+  rust-sdk:
+    generators:
+      - name: fern-rust-sdk
+        version: 0.53.0
+        output:
+          location: local-file-system
+          path: ../sdks/rust
+        config:
+          clientClassName: WeathercloudClient
+          crateName: weathercloud
+          crateVersion: "1.0.0"
+          packageDescription: Rust SDK for the Weathercloud API
+          packageLicense: MIT
+          packageRepository: https://github.com/MauroDruwel/weathercloud-rust
+          packageDocumentation: https://docs.rs/weathercloud
