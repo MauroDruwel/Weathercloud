@@ -8,12 +8,12 @@
     "lint:openapi": "redocly lint openapi.yaml --skip-rule operation-4xx-response",
     "lint:fern": "fern check",
     "docs": "redocly bundle openapi.yaml -o docs/openapi.json --ext json",
-    "generate": "fern generate --local",
-    "generate:python": "fern generate --group python-sdk --local",
-    "generate:csharp": "fern generate --group csharp-sdk --local",
-    "generate:typescript": "fern generate --group typescript-sdk --local",
-    "generate:go": "fern generate --group go-sdk --local",
-    "generate:rust": "fern generate --group rust-sdk --local"
+    "generate": "fern generate --local --force",
+    "generate:python": "fern generate --group python-sdk --local --force",
+    "generate:csharp": "fern generate --group csharp-sdk --local --force",
+    "generate:typescript": "fern generate --group typescript-sdk --local --force --package",
+    "generate:go": "fern generate --group go-sdk --local --force",
+    "generate:rust": "fern generate --group rust-sdk --local --force"
   },
   "devDependencies": {
     "@redocly/cli": "^1.25.0",

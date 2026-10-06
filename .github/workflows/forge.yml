@@ -73,18 +73,23 @@ jobs:
           - group: python-sdk
             repo: weathercloud-py
             dir: sdks/python
+            flags: ""
           - group: csharp-sdk
             repo: weathercloud-csharp
             dir: sdks/csharp
+            flags: ""
           - group: typescript-sdk
             repo: weathercloud-ts
             dir: sdks/typescript
+            flags: "--package"
           - group: go-sdk
             repo: weathercloud-go
             dir: sdks/go
+            flags: ""
           - group: rust-sdk
             repo: weathercloud-rust
             dir: sdks/rust
+            flags: ""
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -98,7 +103,7 @@ jobs:
         run: npm install
 
       - name: Generate ${{ matrix.group }}
-        run: npx fern-api generate --group ${{ matrix.group }} --local
+        run: npx fern-api generate --group ${{ matrix.group }} --local --force ${{ matrix.flags }}
 
       - name: Push to ${{ matrix.repo }}
         if: ${{ env.SYNC_TOKEN != '' }}
