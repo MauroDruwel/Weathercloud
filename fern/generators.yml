@@ -30,6 +30,15 @@ groups:
         output:
           location: local-file-system
           path: ../sdks/csharp
+        config:
+          package-id: Weathercloud
+          namespace: Weathercloud
+          client-class-name: WeathercloudClient
+          package-metadata:
+            description: C# SDK for the Weathercloud API
+            authors:
+              - MauroDruwel
+            repository-url: https://github.com/MauroDruwel/weathercloud-csharp
   typescript-sdk:
     generators:
       - name: fernapi/fern-typescript-sdk
@@ -38,7 +47,17 @@ groups:
           location: local-file-system
           path: ../sdks/typescript
         config:
+          namespaceExport: Weathercloud
           skipResponseValidation: true
+          packageJson:
+            name: weathercloud
+            version: 1.0.0
+            description: TypeScript SDK for the Weathercloud API
+            repository:
+              type: git
+              url: https://github.com/MauroDruwel/weathercloud-ts.git
+            author: Mauro Druwel
+            license: MIT
   go-sdk:
     generators:
       - name: fernapi/fern-go-sdk
@@ -46,6 +65,11 @@ groups:
         output:
           location: local-file-system
           path: ../sdks/go
+        config:
+          packageName: weathercloud
+          clientName: WeathercloudClient
+          module:
+            path: github.com/MauroDruwel/weathercloud-go
   rust-sdk:
     generators:
       - name: fern-rust-sdk
@@ -53,3 +77,11 @@ groups:
         output:
           location: local-file-system
           path: ../sdks/rust
+        config:
+          clientClassName: WeathercloudClient
+          crateName: weathercloud
+          crateVersion: "1.0.0"
+          packageDescription: Rust SDK for the Weathercloud API
+          packageLicense: MIT
+          packageRepository: https://github.com/MauroDruwel/weathercloud-rust
+          packageDocumentation: https://docs.rs/weathercloud

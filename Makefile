@@ -14,19 +14,19 @@ docs:
 	npx --yes @redocly/cli bundle openapi.yaml -o docs/openapi.json --ext json
 
 generate:
-	npx --yes fern-api generate --local
+	npx --yes fern-api generate --local --force
 
 generate-python:
-	npx --yes fern-api generate --group python-sdk --local
+	npx --yes fern-api generate --group python-sdk --local --force
 
 generate-csharp:
-	npx --yes fern-api generate --group csharp-sdk --local
+	npx --yes fern-api generate --group csharp-sdk --local --force
 
 generate-typescript:
-	npx --yes fern-api generate --group typescript-sdk --local
+	npx --yes fern-api generate --group typescript-sdk --local --force --package
 
 generate-go:
-	npx --yes fern-api generate --group go-sdk --local
+	npx --yes fern-api generate --group go-sdk --local --force
 
 generate-rust:
-	npx --yes fern-api generate --group rust-sdk --local
+	npx --yes fern-api generate --group rust-sdk --local --force
