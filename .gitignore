@@ -219,3 +219,6 @@ __marimo__/
 
 # Multi-language SDK generation output (managed in dedicated repositories)
 sdks/
+
+# Node / NPM
+node_modules/
