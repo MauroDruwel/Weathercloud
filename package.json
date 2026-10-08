@@ -9,7 +9,7 @@
     "lint:fern": "fern check",
     "docs": "redocly bundle openapi.yaml -o docs/openapi.json --ext json",
     "generate": "fern generate --local --force",
-    "generate:python": "fern generate --group python-sdk --local --force",
+    "generate:python": "fern generate --group python-sdk --local --force --package",
     "generate:csharp": "fern generate --group csharp-sdk --local --force",
     "generate:typescript": "fern generate --group typescript-sdk --local --force --package",
     "generate:go": "fern generate --group go-sdk --local --force",

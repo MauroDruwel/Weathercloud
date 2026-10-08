@@ -73,7 +73,7 @@ jobs:
           - group: python-sdk
             repo: weathercloud-py
             dir: sdks/python
-            flags: ""
+            flags: "--package"
           - group: csharp-sdk
             repo: weathercloud-csharp
             dir: sdks/csharp

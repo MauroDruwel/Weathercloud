@@ -17,7 +17,7 @@ generate:
 	npx --yes fern-api generate --local --force
 
 generate-python:
-	npx --yes fern-api generate --group python-sdk --local --force
+	npx --yes fern-api generate --group python-sdk --local --force --package
 
 generate-csharp:
 	npx --yes fern-api generate --group csharp-sdk --local --force
