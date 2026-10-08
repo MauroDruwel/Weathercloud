@@ -8,12 +8,13 @@
     "lint:openapi": "redocly lint openapi.yaml --skip-rule operation-4xx-response",
     "lint:fern": "fern check",
     "docs": "redocly bundle openapi.yaml -o docs/openapi.json --ext json",
-    "generate": "fern generate --local --force",
-    "generate:python": "fern generate --group python-sdk --local --force --package",
-    "generate:csharp": "fern generate --group csharp-sdk --local --force",
-    "generate:typescript": "fern generate --group typescript-sdk --local --force --package",
-    "generate:go": "fern generate --group go-sdk --local --force",
-    "generate:rust": "fern generate --group rust-sdk --local --force"
+    "sync:assets": "make sync-assets",
+    "generate": "fern generate --local --force && npm run sync:assets",
+    "generate:python": "fern generate --group python-sdk --local --force --package && if [ -d sdk-assets/python ]; then cp -rf sdk-assets/python/. sdks/python/; fi",
+    "generate:csharp": "fern generate --group csharp-sdk --local --force && if [ -d sdk-assets/csharp ]; then cp -rf sdk-assets/csharp/. sdks/csharp/; fi",
+    "generate:typescript": "fern generate --group typescript-sdk --local --force --package && if [ -d sdk-assets/typescript ]; then cp -rf sdk-assets/typescript/. sdks/typescript/; fi",
+    "generate:go": "fern generate --group go-sdk --local --force && if [ -d sdk-assets/go ]; then cp -rf sdk-assets/go/. sdks/go/; fi",
+    "generate:rust": "fern generate --group rust-sdk --local --force && if [ -d sdk-assets/rust ]; then cp -rf sdk-assets/rust/. sdks/rust/; fi"
   },
   "devDependencies": {
     "@redocly/cli": "^1.25.0",

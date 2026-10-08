@@ -9,6 +9,23 @@ api:
         coerce-enums-to-literals: true
         path-parameter-order: url-order
         resolve-schema-collisions: true
+readme:
+  apiName: Weathercloud
+  introduction: |
+    Typed client library for Weathercloud — query real-time weather station sensor readings, METAR airport observations, historical trends, and sensor statistics without authentication or CSRF tokens.
+  defaultEndpoint: "GET /device/values/{deviceId}"
+  features:
+    "Live Weather Station Readings":
+      - "GET /device/values/{deviceId}"
+      - "GET /device/info/{deviceId}"
+      - "GET /device/stats"
+    "METAR Airport Weather":
+      - "GET /metar/values/{deviceId}"
+    "Forecast & Historical Evolution":
+      - "GET /forecast/daily"
+      - "POST /device/evolution"
+    "Map Stations & Discovery":
+      - "POST /map/devices"
 default-group: python-sdk
 groups:
   python-sdk:

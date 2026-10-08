@@ -1,0 +1,69 @@
+name: Release SDKs
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semantic version to release (e.g. 1.0.1)'
+        required: true
+        default: '1.0.1'
+      sdk:
+        description: 'Target SDK to release'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - python
+          - csharp
+          - typescript
+          - rust
+          - go
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Dispatch Release to Downstream SDKs
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: [python, csharp, typescript, rust, go]
+    steps:
+      - name: Should run for this SDK?
+        id: check
+        run: |
+          if [ "${{ github.event.inputs.sdk }}" = "all" ] || [ "${{ github.event.inputs.sdk }}" = "${{ matrix.sdk }}" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine target repository
+        if: steps.check.outputs.run == 'true'
+        id: repo
+        run: |
+          case "${{ matrix.sdk }}" in
+            python) echo "name=weathercloud-py" >> $GITHUB_OUTPUT ;;
+            csharp) echo "name=weathercloud-csharp" >> $GITHUB_OUTPUT ;;
+            typescript) echo "name=weathercloud-ts" >> $GITHUB_OUTPUT ;;
+            rust) echo "name=weathercloud-rust" >> $GITHUB_OUTPUT ;;
+            go) echo "name=weathercloud-go" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Tag and Create GitHub Release in Downstream Repo
+        if: steps.check.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
+          REPO: MauroDruwel/${{ steps.repo.outputs.name }}
+        run: |
+          TAG="v${VERSION#v}"
+          echo "Creating release $TAG in $REPO..."
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "$TAG" \
+            --notes "Release $TAG of Weathercloud SDK for ${{ matrix.sdk }}" \
+            --target main || echo "Release creation attempted; workflow may already have run"

@@ -71,22 +71,27 @@ jobs:
       matrix:
         include:
           - group: python-sdk
+            sdk: python
             repo: weathercloud-py
             dir: sdks/python
             flags: "--package"
           - group: csharp-sdk
+            sdk: csharp
             repo: weathercloud-csharp
             dir: sdks/csharp
             flags: ""
           - group: typescript-sdk
+            sdk: typescript
             repo: weathercloud-ts
             dir: sdks/typescript
             flags: "--package"
           - group: go-sdk
+            sdk: go
             repo: weathercloud-go
             dir: sdks/go
             flags: ""
           - group: rust-sdk
+            sdk: rust
             repo: weathercloud-rust
             dir: sdks/rust
             flags: ""
@@ -104,6 +109,13 @@ jobs:
 
       - name: Generate ${{ matrix.group }}
         run: npx fern-api generate --group ${{ matrix.group }} --local --force ${{ matrix.flags }}
+
+      - name: Overlay SDK Assets (Workflows, Configs, README)
+        run: |
+          if [ -d "sdk-assets/${{ matrix.sdk }}" ]; then
+            echo "Overlaying assets from sdk-assets/${{ matrix.sdk }} into ${{ matrix.dir }}..."
+            cp -rf sdk-assets/${{ matrix.sdk }}/. ${{ matrix.dir }}/
+          fi
 
       - name: Push to ${{ matrix.repo }}
         if: ${{ env.SYNC_TOKEN != '' }}
