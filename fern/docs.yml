@@ -1,0 +1,10 @@
+instances:
+  - url: https://weathercloud.docs.buildwithfern.com
+title: Weathercloud API
+colors:
+  accentPrimary: '#f6821f'
+  background:
+    dark: '#0f172a'
+    light: '#ffffff'
+navigation:
+  - api: API Reference
